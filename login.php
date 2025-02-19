@@ -3,13 +3,7 @@ require_once 'config/config.php';
 require_once 'config/database.php';
 require_once 'includes/auth.php';
 
-session_start();
 
-// Zaten giriş yapmış kullanıcıyı yönlendir
-if(isset($_SESSION['user_id'])) {
-    header('Location: admin/dashboard.php');
-    exit();
-}
 
 $error = '';
 $success = '';
@@ -22,16 +16,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if(empty($username) || empty($password)) {
         $error = 'Kullanıcı adı ve şifre gereklidir.';
     } else {
-        $db = new Database();
-        $conn = $db->getConnection();
-        $auth = new Auth($conn);
-        
-        if($auth->login($username, $password)) {
-            // Başarılı giriş
-            header('Location: admin/dashboard.php');
-            exit();
-        } else {
-            $error = 'Geçersiz kullanıcı adı veya şifre.';
+        try {
+            $db = new Database();
+            $conn = $db->getConnection();
+            
+            // Kullanıcı kontrolü için SQL sorgusu
+            $stmt = $conn->prepare("SELECT * FROM users WHERE username = :username AND password = :password");
+            $stmt->bindParam(':username', $username);
+            $stmt->bindParam(':password', $password);
+            $stmt->execute();
+            
+            if($stmt->rowCount() > 0) {
+                // Kullanıcı bulundu
+                $user = $stmt->fetch(PDO::FETCH_ASSOC);
+                $_SESSION['id'] = $user['id'];
+                $_SESSION['username'] = $user['username'];
+                
+                header('Location: admin/dashboard.php');
+                exit();
+            } else {
+                $error = 'Geçersiz kullanıcı adı veya şifre.';
+            }
+        } catch(PDOException $e) {
+            $error = "Veritabanı hatası: " . $e->getMessage();
         }
     }
 }

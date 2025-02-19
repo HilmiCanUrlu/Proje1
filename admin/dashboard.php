@@ -6,7 +6,7 @@ require_once '../includes/auth.php';
 session_start();
 
 // Oturum kontrolü
-if(!isset($_SESSION['user_id'])) {
+if(!isset($_SESSION['id'])) {
     header('Location: ../login.php');
     exit();
 }

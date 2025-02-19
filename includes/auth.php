@@ -64,5 +64,28 @@ class Auth {
         session_destroy();
         return true;
     }
+    
+    public function rememberMe($userId) {
+        $token = bin2hex(random_bytes(32));
+        $expires = date('Y-m-d H:i:s', strtotime('+30 days'));
+        
+        try {
+            $query = "INSERT INTO user_tokens (user_id, token, expires) 
+                      VALUES (:user_id, :token, :expires)";
+            $stmt = $this->conn->prepare($query);
+            
+            $stmt->bindParam(":user_id", $userId);
+            $stmt->bindParam(":token", $token);
+            $stmt->bindParam(":expires", $expires);
+            
+            if($stmt->execute()) {
+                setcookie('remember_token', $token, strtotime('+30 days'), '/', '', true, true);
+                return true;
+            }
+            return false;
+        } catch(PDOException $e) {
+            return false;
+        }
+    }
 }
 ?> 

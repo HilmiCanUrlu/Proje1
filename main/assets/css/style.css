@@ -1,0 +1,136 @@
+:root {
+    --primary-bg: #f8f9fa;
+    --card-border-radius: 10px;
+    --transition-speed: 0.3s;
+}
+
+body {
+    background-color: var(--primary-bg);
+}
+
+.sidebar {
+    min-height: calc(100vh - 56px);
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+}
+
+.sidebar .nav-link {
+    color: #333;
+    padding: 0.8rem 1rem;
+    border-radius: 5px;
+    margin: 0.2rem 0;
+    transition: all var(--transition-speed);
+}
+
+.sidebar .nav-link:hover {
+    background-color: var(--primary-bg);
+    padding-left: 1.5rem;
+}
+
+.sidebar .nav-link.active {
+    background-color: var(--bs-primary);
+    color: white;
+}
+
+.sidebar .nav-link i {
+    margin-right: 10px;
+    width: 20px;
+    text-align: center;
+}
+
+.user-profile {
+    margin-left: auto;
+}
+
+.user-profile i {
+    margin-right: 5px;
+}
+
+.user-profile .dropdown-menu {
+    border: none;
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+    border-radius: var(--card-border-radius);
+}
+
+.toast-container {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 1050;
+}
+
+.icon-box {
+    width: 48px;
+    height: 48px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.icon-box i {
+    font-size: 24px;
+    color: white;
+}
+
+.dashboard-card {
+    border-radius: var(--card-border-radius);
+    border: none;
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+    transition: transform var(--transition-speed), box-shadow var(--transition-speed);
+}
+
+.dashboard-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+}
+
+.quick-actions .btn {
+    text-align: left;
+    padding: 12px;
+}
+
+.quick-actions .btn i {
+    margin-right: 10px;
+    width: 20px;
+}
+
+.date-time {
+    font-size: 1.1rem;
+    color: #6c757d;
+}
+
+#currentDateTime {
+    font-weight: 500;
+}
+
+.table td {
+    vertical-align: middle;
+}
+
+.badge {
+    padding: 6px 12px;
+}
+
+.loading-spinner {
+    width: 3rem;
+    height: 3rem;
+}
+
+@media (max-width: 768px) {
+    .sidebar {
+        position: fixed;
+        top: 56px;
+        left: -100%;
+        height: calc(100vh - 56px);
+        z-index: 1000;
+        transition: left var(--transition-speed);
+    }
+
+    .sidebar.show {
+        left: 0;
+    }
+
+    .main-content {
+        margin-left: 0 !important;
+    }
+} 

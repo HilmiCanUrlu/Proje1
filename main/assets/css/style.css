@@ -1,136 +1,197 @@
-:root {
-    --primary-bg: #f8f9fa;
-    --card-border-radius: 10px;
-    --transition-speed: 0.3s;
-}
-
+/* Genel Stiller */
 body {
-    background-color: var(--primary-bg);
+    background-color: #f8f9fa;
+    padding-top: 56px;
 }
 
+/* Navbar Stiller */
+.top-navbar {
+    background: #343a40;
+    padding: 10px 20px;
+    color: white;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 1030;
+}
+
+.user-dropdown {
+    cursor: pointer;
+}
+
+.user-dropdown .dropdown-menu {
+    right: 0;
+    left: auto;
+    margin-top: 10px;
+}
+
+.user-dropdown .dropdown-item {
+    padding: 8px 20px;
+}
+
+.user-dropdown .dropdown-item i {
+    margin-right: 10px;
+    width: 20px;
+}
+
+/* Sidebar Stiller */
 .sidebar {
+    position: fixed;
+    top: 56px;
+    left: 0;
+    bottom: 0;
+    width: 16.666667%;
+    background-color: #fff;
+    border-right: 1px solid #dee2e6;
+    padding-top: 20px;
+    overflow-y: auto;
     min-height: calc(100vh - 56px);
-    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
 }
 
 .sidebar .nav-link {
     color: #333;
-    padding: 0.8rem 1rem;
-    border-radius: 5px;
-    margin: 0.2rem 0;
-    transition: all var(--transition-speed);
+    padding: 12px 20px;
+    margin: 4px 0;
+    border-radius: 8px;
 }
 
 .sidebar .nav-link:hover {
-    background-color: var(--primary-bg);
-    padding-left: 1.5rem;
+    background-color: #f8f9fa;
 }
 
 .sidebar .nav-link.active {
-    background-color: var(--bs-primary);
+    background-color: #0d6efd;
     color: white;
 }
 
 .sidebar .nav-link i {
     margin-right: 10px;
     width: 20px;
-    text-align: center;
 }
 
-.user-profile {
-    margin-left: auto;
+/* Ana İçerik Stiller */
+.main-content {
+    margin-left: 16.666667%;
+    padding: 30px;
 }
 
-.user-profile i {
-    margin-right: 5px;
+/* Kart Stiller */
+.stat-card {
+    background: white;
+    border-radius: 10px;
+    padding: 20px;
+    margin-bottom: 20px;
+    box-shadow: 0 0 10px rgba(0,0,0,0.05);
+    transition: transform 0.2s, box-shadow 0.2s;
 }
 
-.user-profile .dropdown-menu {
-    border: none;
-    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
-    border-radius: var(--card-border-radius);
+.stat-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 .5rem 1rem rgba(0,0,0,.15);
 }
 
-.toast-container {
-    position: fixed;
-    top: 20px;
-    right: 20px;
-    z-index: 1050;
-}
-
-.icon-box {
-    width: 48px;
-    height: 48px;
+.stat-icon {
+    width: 50px;
+    height: 50px;
     border-radius: 10px;
     display: flex;
     align-items: center;
     justify-content: center;
-}
-
-.icon-box i {
     font-size: 24px;
-    color: white;
 }
 
-.dashboard-card {
-    border-radius: var(--card-border-radius);
-    border: none;
-    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
-    transition: transform var(--transition-speed), box-shadow var(--transition-speed);
+/* Tablo Stiller */
+.activity-table {
+    background: white;
+    border-radius: 10px;
+    padding: 20px;
+    box-shadow: 0 0 10px rgba(0,0,0,0.05);
 }
 
-.dashboard-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
-}
-
-.quick-actions .btn {
-    text-align: left;
-    padding: 12px;
-}
-
-.quick-actions .btn i {
-    margin-right: 10px;
-    width: 20px;
-}
-
-.date-time {
-    font-size: 1.1rem;
-    color: #6c757d;
-}
-
-#currentDateTime {
-    font-weight: 500;
+.table th {
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 0.8rem;
 }
 
 .table td {
     vertical-align: middle;
 }
 
+/* Hızlı İşlemler Stiller */
+.quick-actions {
+    background: white;
+    border-radius: 10px;
+    padding: 20px;
+    box-shadow: 0 0 10px rgba(0,0,0,0.05);
+}
+
+.quick-actions .btn {
+    width: 100%;
+    padding: 12px;
+    margin: 8px 0;
+    border-radius: 8px;
+    text-align: left;
+}
+
+/* Badge Stiller */
 .badge {
     padding: 6px 12px;
+    border-radius: 6px;
 }
 
-.loading-spinner {
-    width: 3rem;
-    height: 3rem;
+.badge-success { background-color: #28a745; color: white; }
+.badge-info { background-color: #17a2b8; color: white; }
+.badge-warning { background-color: #ffc107; color: black; }
+
+/* Profil Modal Stiller */
+.avatar-circle {
+    width: 80px;
+    height: 80px;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: #f8f9fa;
+    border-radius: 50%;
 }
 
+.user-info .info-item {
+    font-size: 0.95rem;
+}
+
+.modal-content {
+    border: none;
+    border-radius: 15px;
+}
+
+.modal-header {
+    border-bottom: 1px solid #dee2e6;
+    background-color: #f8f9fa;
+    border-radius: 15px 15px 0 0;
+}
+
+.modal-footer {
+    border-top: 1px solid #dee2e6;
+    background-color: #f8f9fa;
+    border-radius: 0 0 15px 15px;
+}
+
+/* Responsive Stiller */
 @media (max-width: 768px) {
     .sidebar {
-        position: fixed;
-        top: 56px;
-        left: -100%;
-        height: calc(100vh - 56px);
-        z-index: 1000;
-        transition: left var(--transition-speed);
+        position: static;
+        width: 100%;
+        min-height: auto;
     }
-
-    .sidebar.show {
-        left: 0;
-    }
-
+    
     .main-content {
-        margin-left: 0 !important;
+        margin-left: 0;
+        padding: 15px;
+    }
+    
+    .stat-card {
+        margin-bottom: 15px;
     }
 } 

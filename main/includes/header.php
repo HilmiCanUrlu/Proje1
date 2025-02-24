@@ -33,11 +33,15 @@ if (!isset($_SESSION['user_id'])) {
                             <i class="fas fa-user"></i> <?php echo isset($_SESSION['username']) ? $_SESSION['username'] : 'Kullanıcı'; ?>
                         </a>
                         <ul class="dropdown-menu dropdown-menu-end">
+<<<<<<< HEAD
                             <li>
                                 <a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#profileModal">
                                     <i class="fas fa-user-circle"></i> Profil
                                 </a>
                             </li>
+=======
+                            <li><a class="dropdown-item" href="profile.php"><i class="fas fa-id-card"></i> Profil</a></li>
+>>>>>>> 3566fc85cf77e1ad6aa3f20642a4ebc515ebb6cf
                             <li><hr class="dropdown-divider"></li>
                             <li><a class="dropdown-item" href="logout.php"><i class="fas fa-sign-out-alt"></i> Çıkış</a></li>
                         </ul>
@@ -47,6 +51,7 @@ if (!isset($_SESSION['user_id'])) {
         </div>
     </nav>
 
+<<<<<<< HEAD
     <!-- Profil Modal -->
     <div class="modal fade" id="profileModal" tabindex="-1" aria-labelledby="profileModalLabel" aria-hidden="true">
         <div class="modal-dialog">
@@ -67,6 +72,8 @@ if (!isset($_SESSION['user_id'])) {
         </div>
     </div>
 
+=======
+>>>>>>> 3566fc85cf77e1ad6aa3f20642a4ebc515ebb6cf
     <!-- Ana Container -->
     <div class="wrapper">
         <div class="container-fluid">
@@ -100,6 +107,27 @@ if (!isset($_SESSION['user_id'])) {
 
                 <!-- Ana İçerik Alanı -->
                 <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
+<<<<<<< HEAD
+=======
+                    <!-- Profil Modal -->
+                    <div class="modal fade" id="profileModal" tabindex="-1">
+                        <div class="modal-dialog">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title">Profil Bilgileri</h5>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                </div>
+                                <div class="modal-body">
+                                    <div class="user-info">
+                                        <p><strong>Kullanıcı Adı:</strong> <?php echo htmlspecialchars($_SESSION['username']); ?></p>
+                                        <p><strong>Rol:</strong> <?php echo htmlspecialchars($_SESSION['role']); ?></p>
+                                        <p><strong>Son Giriş:</strong> <?php echo $_SESSION['last_login'] ?? 'Bilgi yok'; ?></p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+>>>>>>> 3566fc85cf77e1ad6aa3f20642a4ebc515ebb6cf
                 </main>
             </div>
         </div>

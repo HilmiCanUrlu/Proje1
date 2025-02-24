@@ -1,0 +1,266 @@
+/* Dashboard Kartları */
+.dashboard-card {
+    border-radius: 15px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    transition: transform 0.3s ease;
+}
+
+.dashboard-card:hover {
+    transform: translateY(-5px);
+}
+
+.dashboard-card .card-body {
+    padding: 1.5rem;
+}
+
+.dashboard-card .card-title {
+    color: #6c757d;
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.dashboard-card h2 {
+    color: #2c3e50;
+    font-weight: 600;
+    margin: 10px 0;
+}
+
+/* İkon Kutusu */
+.icon-box {
+    width: 50px;
+    height: 50px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.icon-box i {
+    color: white;
+    font-size: 1.5rem;
+}
+
+/* Aktivite Tablosu */
+.activity-table {
+    margin-top: 2rem;
+}
+
+.activity-table th {
+    font-weight: 600;
+    color: #495057;
+    border-bottom: 2px solid #dee2e6;
+}
+
+.activity-table td {
+    vertical-align: middle;
+    padding: 1rem;
+}
+
+/* Durum Badge'leri */
+.status-badge {
+    padding: 5px 10px;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 500;
+}
+
+.status-success {
+    background-color: #d4edda;
+    color: #155724;
+}
+
+.status-warning {
+    background-color: #fff3cd;
+    color: #856404;
+}
+
+.status-danger {
+    background-color: #f8d7da;
+    color: #721c24;
+}
+
+.status-info {
+    background-color: #d1ecf1;
+    color: #0c5460;
+}
+
+/* Grafik Kartı */
+.chart-card {
+    margin-top: 2rem;
+}
+
+.chart-container {
+    position: relative;
+    height: 300px;
+    padding: 1rem;
+}
+
+/* Tarih ve Saat */
+.date-time {
+    font-size: 0.9rem;
+    color: #6c757d;
+    margin-bottom: 1rem;
+}
+
+/* İstatistik Renkleri */
+.stat-users {
+    background: linear-gradient(45deg, #4e73df, #224abe);
+}
+
+.stat-sessions {
+    background: linear-gradient(45deg, #1cc88a, #13855c);
+}
+
+.stat-transactions {
+    background: linear-gradient(45deg, #36b9cc, #258391);
+}
+
+.stat-status {
+    background: linear-gradient(45deg, #f6c23e, #dda20a);
+}
+
+/* Responsive Ayarlar */
+@media (max-width: 768px) {
+    .dashboard-card {
+        margin-bottom: 1rem;
+    }
+
+    .chart-container {
+        height: 200px;
+    }
+
+    .activity-table {
+        font-size: 0.9rem;
+    }
+
+    .icon-box {
+        width: 40px;
+        height: 40px;
+    }
+
+    .icon-box i {
+        font-size: 1.2rem;
+    }
+}
+
+/* Animasyonlar */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.dashboard-card {
+    animation: fadeIn 0.5s ease-out;
+}
+
+/* Dashboard Özet Kartları */
+.stats-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 20px;
+    margin-bottom: 30px;
+}
+
+.stat-card {
+    background: white;
+    border-radius: 12px;
+    padding: 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 2px 10px rgba(0,0,0,.05);
+}
+
+.stat-info h3 {
+    color: #6c757d;
+    font-size: 14px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 10px;
+}
+
+.stat-info h2 {
+    color: #2c3e50;
+    font-size: 28px;
+    font-weight: 600;
+    margin: 0;
+}
+
+.stat-icon {
+    width: 50px;
+    height: 50px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 24px;
+}
+
+.bg-primary {
+    background: linear-gradient(45deg, #4e73df, #224abe);
+}
+
+.bg-success {
+    background: linear-gradient(45deg, #1cc88a, #13855c);
+}
+
+.bg-info {
+    background: linear-gradient(45deg, #36b9cc, #258391);
+}
+
+.bg-warning {
+    background: linear-gradient(45deg, #f6c23e, #dda20a);
+}
+
+/* Aktivite Tablosu */
+.activity-section {
+    background: white;
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: 0 2px 10px rgba(0,0,0,.05);
+}
+
+.activity-section h5 {
+    color: #2c3e50;
+    margin-bottom: 20px;
+    font-weight: 600;
+}
+
+.table {
+    margin-bottom: 0;
+}
+
+.table th {
+    border-top: none;
+    color: #6c757d;
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 12px;
+    letter-spacing: 0.5px;
+}
+
+.table td {
+    vertical-align: middle;
+    color: #2c3e50;
+}
+
+/* Hızlı İşlemler */
+.quick-actions {
+    margin-top: 30px;
+}
+
+.quick-actions .btn {
+    width: 100%;
+    padding: 12px;
+    margin-bottom: 10px;
+    border-radius: 8px;
+    font-weight: 500;
+} 

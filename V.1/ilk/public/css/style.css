@@ -1,0 +1,135 @@
+ /* Genel Stiller */
+body {
+    background-color: #f8f9fa;
+    min-height: 100vh;
+}
+
+/* Navbar Stilleri */
+.navbar {
+    box-shadow: 0 2px 4px rgba(0,0,0,.1);
+}
+
+.navbar-brand {
+    font-weight: 600;
+}
+
+/* Card Stilleri */
+.card {
+    border: none;
+    border-radius: 10px;
+    box-shadow: 0 0 20px rgba(0,0,0,.05);
+    margin-bottom: 20px;
+}
+
+.card-header {
+    background-color: #fff;
+    border-bottom: 1px solid #eee;
+    padding: 15px 20px;
+}
+
+.card-title {
+    margin-bottom: 0;
+    font-weight: 600;
+}
+
+/* Form Stilleri */
+.form-control {
+    border-radius: 5px;
+    border: 1px solid #ddd;
+    padding: 8px 12px;
+}
+
+.form-control:focus {
+    border-color: #0d6efd;
+    box-shadow: 0 0 0 0.25rem rgba(13,110,253,.25);
+}
+
+/* Tablo Stilleri */
+.table {
+    margin-bottom: 0;
+}
+
+.table th {
+    font-weight: 600;
+    background-color: #f8f9fa;
+}
+
+/* DataTables Özelleştirmeleri */
+.dataTables_wrapper .dataTables_length select {
+    padding: 4px 24px 4px 8px;
+}
+
+.dataTables_wrapper .dataTables_filter input {
+    padding: 4px 8px;
+}
+
+/* Button Stilleri */
+.btn {
+    border-radius: 5px;
+    padding: 8px 16px;
+    font-weight: 500;
+}
+
+.btn-icon {
+    padding: 6px 10px;
+}
+
+/* Alert Stilleri */
+.alert {
+    border: none;
+    border-radius: 5px;
+}
+
+/* Badge Stilleri */
+.badge {
+    padding: 6px 10px;
+    font-weight: 500;
+}
+
+/* Pagination Stilleri */
+.pagination {
+    margin-bottom: 0;
+}
+
+.page-link {
+    padding: 8px 12px;
+}
+
+/* Modal Stilleri */
+.modal-content {
+    border: none;
+    border-radius: 10px;
+}
+
+.modal-header {
+    border-bottom: 1px solid #eee;
+    padding: 15px 20px;
+}
+
+.modal-footer {
+    border-top: 1px solid #eee;
+    padding: 15px 20px;
+}
+
+/* Loading Spinner */
+.spinner-border {
+    width: 1.5rem;
+    height: 1.5rem;
+    border-width: 0.2em;
+}
+
+/* Tooltip Stilleri */
+.tooltip {
+    font-size: 12px;
+}
+
+/* Responsive Düzenlemeler */
+@media (max-width: 768px) {
+    .card-body {
+        padding: 15px;
+    }
+    
+    .table-responsive {
+        border: none;
+    }
+}

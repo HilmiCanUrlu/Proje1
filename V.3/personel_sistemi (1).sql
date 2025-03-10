@@ -55,6 +55,41 @@ INSERT INTO `dosyalar` (`dosya_id`, `izin_id`, `personel_id`, `musteri_id`, `olu
 -- --------------------------------------------------------
 
 --
+-- Tablo için tablo yapısı `islemler`
+--
+
+CREATE TABLE `islemler` (
+  `islem_id` int(11) NOT NULL,
+  `dosya_id` int(11) NOT NULL,
+  `toplam_tutar` decimal(10,2) NOT NULL,
+  `kalan_tutar` decimal(10,2) NOT NULL,
+  `yapilan_tutar` decimal(10,2) NOT NULL,
+  `aciklama` text DEFAULT NULL,
+  `tarih` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Tablo için indeksler `islemler`
+--
+ALTER TABLE `islemler`
+  ADD PRIMARY KEY (`islem_id`),
+  ADD KEY `dosya_id` (`dosya_id`);
+
+--
+-- Tablo için AUTO_INCREMENT değeri `islemler`
+--
+ALTER TABLE `islemler`
+  MODIFY `islem_id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- Tablo kısıtlamaları `islemler`
+--
+ALTER TABLE `islemler`
+  ADD CONSTRAINT `islemler_ibfk_1` FOREIGN KEY (`dosya_id`) REFERENCES `dosyalar` (`dosya_id`) ON DELETE CASCADE;
+
+-- --------------------------------------------------------
+
+--
 -- Tablo için tablo yapısı `muhasebe`
 --
 

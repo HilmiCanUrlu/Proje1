@@ -2,76 +2,105 @@
 session_start();
 require_once "database.php";
 
+header('Content-Type: application/json');
+
+// Hata raporlamayı aktifleştir
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
+
+// Oturum kontrolü - loggedin kontrolü ekleyelim
 if (!isset($_SESSION['loggedin']) || $_SESSION['loggedin'] !== true) {
-    http_response_code(401);
-    exit(json_encode(['error' => 'Unauthorized']));
+    echo json_encode(['success' => false, 'message' => 'Oturum bulunamadı']);
+    exit;
 }
 
+// Dosya ID kontrolü
 if (!isset($_GET['dosya_id'])) {
-    http_response_code(400);
-    exit(json_encode(['error' => 'Dosya ID required']));
+    echo json_encode(['success' => false, 'message' => 'Dosya ID bulunamadı']);
+    exit;
 }
-
-$database = new Database();
-$db = $database->getConnection();
 
 try {
-    // Dosya ve müşteri bilgilerini al
-    $query = "SELECT d.*, m.musteri_adi, m.telefon, m.email 
-              FROM dosyalar d 
-              LEFT JOIN musteriler m ON d.musteri_id = m.musteri_id 
-              WHERE d.dosya_id = :dosya_id";
-    
-    $stmt = $db->prepare($query);
-    $stmt->execute([':dosya_id' => $_GET['dosya_id']]);
-    $dosya = $stmt->fetch(PDO::FETCH_ASSOC);
+    $db = new Database();
+    $conn = $db->getConnection();
 
-    if (!$dosya) {
-        http_response_code(404);
-        exit(json_encode(['error' => 'Dosya not found']));
+    $dosya_id = intval($_GET['dosya_id']);
+
+    // Debug için dosya ID'sini kontrol et
+    error_log("Dosya ID: " . $dosya_id);
+
+    // Önce dosyaya ait müşteri ID'sini al
+    $stmt = $conn->prepare("SELECT musteri_id FROM dosyalar WHERE dosya_id = ?");
+    $stmt->execute([$dosya_id]);
+    $musteri_id = $stmt->fetchColumn();
+
+    // Debug için müşteri ID'sini kontrol et
+    error_log("Müşteri ID: " . ($musteri_id ?: 'bulunamadı'));
+
+    if (!$musteri_id) {
+        echo json_encode(['success' => false, 'message' => 'Dosyaya ait müşteri bulunamadı']);
+        exit;
     }
 
-    // İlk işlemi al (toplam tutarı almak için)
-    $query = "SELECT * FROM islemler WHERE dosya_id = :dosya_id ORDER BY islem_id ASC LIMIT 1";
-    $stmt = $db->prepare($query);
-    $stmt->execute([':dosya_id' => $_GET['dosya_id']]);
-    $ilk_islem = $stmt->fetch(PDO::FETCH_ASSOC);
+    // Muhasebe tablosunun varlığını kontrol et
+    $tableCheck = $conn->query("SHOW TABLES LIKE 'muhasebe'");
+    if ($tableCheck->rowCount() == 0) {
+        // Muhasebe tablosu yoksa oluştur
+        $conn->exec("CREATE TABLE IF NOT EXISTS muhasebe (
+            muhasebe_id INT AUTO_INCREMENT PRIMARY KEY,
+            musteri_id INT NOT NULL,
+            toplam_tutar DECIMAL(10,2) NOT NULL DEFAULT 0,
+            yapilan_odeme DECIMAL(10,2) NOT NULL DEFAULT 0,
+            kalan_tutar DECIMAL(10,2) NOT NULL DEFAULT 0,
+            aciklama TEXT,
+            tarih TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (musteri_id) REFERENCES musteriler(musteri_id)
+        )");
+    }
 
-    // Son işlemi al (güncel kalan tutarı almak için)
-    $query = "SELECT * FROM islemler WHERE dosya_id = :dosya_id ORDER BY islem_id DESC LIMIT 1";
-    $stmt = $db->prepare($query);
-    $stmt->execute([':dosya_id' => $_GET['dosya_id']]);
-    $son_islem = $stmt->fetch(PDO::FETCH_ASSOC);
-
-    // Tüm işlemleri al
-    $query = "SELECT *, DATE_FORMAT(olusturma_tarihi, '%d.%m.%Y %H:%i') as formatli_tarih 
-              FROM islemler 
-              WHERE dosya_id = :dosya_id 
-              ORDER BY islem_id DESC";
-    $stmt = $db->prepare($query);
-    $stmt->execute([':dosya_id' => $_GET['dosya_id']]);
+    // Muhasebe kayıtlarını getir
+    $stmt = $conn->prepare("SELECT * FROM muhasebe WHERE musteri_id = ? ORDER BY muhasebe_id DESC");
+    $stmt->execute([$musteri_id]);
     $islemler = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-    // Toplam yapılan ödemeyi hesapla
+    // Debug için işlem sayısını kontrol et
+    error_log("Bulunan işlem sayısı: " . count($islemler));
+
+    // Özet bilgileri hesapla
+    $toplam_tutar = 0;
     $toplam_yapilan = 0;
-    foreach ($islemler as $islem) {
-        $toplam_yapilan += $islem['yapilan_tutar'];
+    $toplam_kalan = 0;
+    $ilk_islem_var = false;
+
+    if (count($islemler) > 0) {
+        $ilk_islem_var = true;
+        $toplam_tutar = floatval($islemler[0]['toplam_tutar']);
+        $toplam_yapilan = floatval($islemler[0]['yapilan_odeme']);
+        $toplam_kalan = floatval($islemler[0]['kalan_tutar']);
     }
 
-    // Sonuçları döndür
-    echo json_encode([
+    $response = [
         'success' => true,
-        'dosya' => $dosya,
         'islemler' => $islemler,
         'ozet' => [
-            'toplam_tutar' => $ilk_islem ? $ilk_islem['toplam_tutar'] : 0,
+            'toplam_tutar' => $toplam_tutar,
             'toplam_yapilan' => $toplam_yapilan,
-            'toplam_kalan' => $son_islem ? $son_islem['kalan_tutar'] : 0
+            'toplam_kalan' => $toplam_kalan
         ],
-        'ilk_islem_var' => !empty($ilk_islem)
-    ]);
+        'ilk_islem_var' => $ilk_islem_var,
+        'debug' => [
+            'dosya_id' => $dosya_id,
+            'musteri_id' => $musteri_id
+        ]
+    ];
+
+    echo json_encode($response);
 
 } catch (PDOException $e) {
-    http_response_code(500);
-    exit(json_encode(['error' => 'Database error: ' . $e->getMessage()]));
+    error_log("PDO Hatası: " . $e->getMessage());
+    echo json_encode([
+        'success' => false,
+        'message' => 'Veritabanı hatası: ' . $e->getMessage(),
+        'error_code' => $e->getCode()
+    ]);
 } 

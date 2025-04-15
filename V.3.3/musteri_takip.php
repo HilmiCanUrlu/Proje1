@@ -72,21 +72,7 @@ $toplam_musteri_count = count($musteriler);
     <div class="container-fluid">
         <div class="row">
             <!-- Sol Sidebar -->
-            <div class="col-md-2 sidebar py-3">
-                <div class="text-center mb-4">
-                    <h3 class="text-primary">LOGO</h3>
-                    <div class="border-bottom border-2 mb-3"></div>
-                </div>
-                <nav class="nav flex-column">
-                    <a class="nav-link" href="dashboard.php"><i class="bi bi-house-door me-2"></i>Dashboard</a>
-                    <a class="nav-link" href="kullanici_yonetim.php"><i class="bi bi-people me-2"></i>Kullanıcı Yönetimi</a>
-                    <a class="nav-link" href="dosya_takip.php"><i class="bi bi-folder me-2"></i>Dosya Takip</a>
-                    <a class="nav-link active" href="musteri_takip.php"><i class="bi bi-person me-2"></i>Müşteri Takip</a>
-                    <a class="nav-link" href="yeni_musteri.php"><i class="bi bi-person-plus me-2"></i>Yeni Müşteri</a>
-                    <a class="nav-link" href="yeni_dosya.php"><i class="bi bi-file-plus me-2"></i>Yeni Dosya Ekle</a>
-                    <a class="nav-link" href="#"><i class="bi bi-gear me-2"></i>Ayarlar</a>
-                </nav>
-            </div>
+            <?php include 'sidebar.php'; ?>
 
             <!-- Ana İçerik -->
             <div class="col-md-10 py-3">

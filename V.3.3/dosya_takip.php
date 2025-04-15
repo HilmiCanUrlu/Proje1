@@ -68,13 +68,51 @@ $takim_proje_count = count(array_filter($dosyalar, function($d) { return $d['dos
         .nav-link {
             color: #333;
             padding: 0.8rem 1rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            text-decoration: none;
         }
         .nav-link:hover {
             background-color: #e9ecef;
+            color: #333;
         }
         .nav-link.active {
             background-color: #0d6efd;
             color: white;
+        }
+        .nav-link i {
+            font-size: 1.1rem;
+            width: 24px;
+            text-align: center;
+            color: #28a745;
+        }
+        .nav-link.active i {
+            color: white;
+        }
+        .collapse {
+            background-color: #f1f3f5;
+        }
+        .collapse .nav-link {
+            padding: 0.6rem 1rem 0.6rem 2.5rem;
+            font-size: 0.95rem;
+        }
+        .collapse .nav-link i {
+            font-size: 1rem;
+            width: 20px;
+        }
+        .collapse .nav-link:hover {
+            background-color: #e9ecef;
+        }
+        .bi-chevron-down {
+            transition: transform 0.3s ease;
+            color: #6c757d !important;
+        }
+        [aria-expanded="true"] .bi-chevron-down {
+            transform: rotate(180deg);
+        }
+        .nav-item.dropdown {
+            margin-bottom: 0.5rem;
         }
         .stats-card {
             border-radius: 10px;
@@ -87,21 +125,7 @@ $takim_proje_count = count(array_filter($dosyalar, function($d) { return $d['dos
     <div class="container-fluid">
         <div class="row">
             <!-- Sol Sidebar -->
-            <div class="col-md-2 sidebar py-3">
-                <div class="text-center mb-4">
-                    <h3 class="text-primary">LOGO</h3>
-                    <div class="border-bottom border-2 mb-3"></div>
-                </div>
-                <nav class="nav flex-column">
-                    <a class="nav-link" href="dashboard.php"><i class="bi bi-house-door me-2"></i>Dashboard</a>
-                    <a class="nav-link" href="kullanici_yonetim.php"><i class="bi bi-people me-2"></i>Kullanıcı Yönetimi</a>
-                    <a class="nav-link active" href="dosya_takip.php"><i class="bi bi-folder me-2"></i>Dosya Takip</a>
-                    <a class="nav-link" href="musteri_takip.php"><i class="bi bi-person me-2"></i>Müşteri Takip</a>
-                    <a class="nav-link" href="yeni_musteri.php"><i class="bi bi-person-plus me-2"></i>Yeni Müşteri</a>
-                    <a class="nav-link" href="yeni_dosya.php"><i class="bi bi-file-plus me-2"></i>Yeni Dosya Ekle</a>
-                    <a class="nav-link" href="#"><i class="bi bi-gear me-2"></i>Ayarlar</a>
-                </nav>
-            </div>
+            <?php include 'sidebar.php'; ?>
 
             <!-- Ana İçerik -->
             <div class="col-md-10 py-3">
@@ -162,9 +186,9 @@ $takim_proje_count = count(array_filter($dosyalar, function($d) { return $d['dos
                                                 <td><?php echo htmlspecialchars($dosya['ada'] . '/' . $dosya['parsel']); ?></td>
                                                 <td>
                                                     <div class="btn-group btn-group-sm">
-                                                        <button class="btn btn-primary" onclick="showDosyaDetay(<?php echo $dosya['dosya_id']; ?>)">
-                                                            Detay
-                                                        </button>
+                                                    <a href="file_detay.php?dosya_id=<?php echo $dosya['dosya_id']; ?>" class="btn btn-primary">
+    Detay
+</a>
                                                         <button class="btn btn-success" onclick="showMuhasebeDetay(<?php echo $dosya['dosya_id']; ?>)">
                                                             Muhasebe
                                                         </button>
@@ -432,50 +456,50 @@ $takim_proje_count = count(array_filter($dosyalar, function($d) { return $d['dos
         fetch(`muhasebe_detay.php?dosya_id=${dosyaId}`)
             .then(response => response.json())
             .then(data => {
+                console.log('Muhasebe detay yanıtı:', data); // Debug için yanıtı konsola yazdır
+
                 if (data.success) {
                     // Özet bilgileri güncelle
                     document.getElementById('toplamTutarOzet').textContent = 
-                        data.ozet.toplam_tutar.toLocaleString('tr-TR', {minimumFractionDigits: 2}) + ' ₺';
+                        parseFloat(data.ozet.toplam_tutar).toLocaleString('tr-TR', {minimumFractionDigits: 2}) + ' ₺';
                     document.getElementById('yapilanOdemeOzet').textContent = 
-                        data.ozet.toplam_yapilan.toLocaleString('tr-TR', {minimumFractionDigits: 2}) + ' ₺';
+                        parseFloat(data.ozet.toplam_yapilan).toLocaleString('tr-TR', {minimumFractionDigits: 2}) + ' ₺';
                     document.getElementById('kalanTutarOzet').textContent = 
-                        data.ozet.toplam_kalan.toLocaleString('tr-TR', {minimumFractionDigits: 2}) + ' ₺';
+                        parseFloat(data.ozet.toplam_kalan).toLocaleString('tr-TR', {minimumFractionDigits: 2}) + ' ₺';
 
                     // İşlemler tablosunu güncelle
                     let islemlerHTML = '';
-                    data.islemler.forEach(islem => {
-                        // Tarihi formatla
-                        const tarih = new Date(islem.olusturma_tarihi);
-                        const formatliTarih = tarih.toLocaleString('tr-TR', {
-                            year: 'numeric',
-                            month: '2-digit',
-                            day: '2-digit',
-                            hour: '2-digit',
-                            minute: '2-digit'
-                        });
+                    if (data.islemler && data.islemler.length > 0) {
+                        data.islemler.forEach(islem => {
+                            const tarih = new Date(islem.tarih);
+                            const formatliTarih = tarih.toLocaleString('tr-TR');
 
-                        islemlerHTML += `
-                            <tr>
-                                <td>${islem.islem_id}</td>
-                                <td>${formatliTarih}</td>
-                                <td>${parseFloat(islem.toplam_tutar).toLocaleString('tr-TR', {minimumFractionDigits: 2})} ₺</td>
-                                <td>${parseFloat(islem.yapilan_tutar).toLocaleString('tr-TR', {minimumFractionDigits: 2})} ₺</td>
-                                <td>${parseFloat(islem.kalan_tutar).toLocaleString('tr-TR', {minimumFractionDigits: 2})} ₺</td>
-                                <td>${islem.aciklama || ''}</td>
-                            </tr>
-                        `;
-                    });
+                            islemlerHTML += `
+                                <tr>
+                                    <td>${islem.muhasebe_id}</td>
+                                    <td>${formatliTarih}</td>
+                                    <td>${parseFloat(islem.toplam_tutar).toLocaleString('tr-TR', {minimumFractionDigits: 2})} ₺</td>
+                                    <td>${parseFloat(islem.yapilan_odeme).toLocaleString('tr-TR', {minimumFractionDigits: 2})} ₺</td>
+                                    <td>${parseFloat(islem.kalan_tutar).toLocaleString('tr-TR', {minimumFractionDigits: 2})} ₺</td>
+                                    <td>${islem.aciklama || ''}</td>
+                                </tr>
+                            `;
+                        });
+                    } else {
+                        islemlerHTML = '<tr><td colspan="6" class="text-center">Henüz işlem bulunmuyor</td></tr>';
+                    }
                     document.getElementById('muhasebeIslemlerListesi').innerHTML = islemlerHTML;
 
                     // Modalı göster
                     new bootstrap.Modal(document.getElementById('muhasebeModal')).show();
                 } else {
-                    alert('Veri yüklenirken bir hata oluştu');
+                    console.error('Hata:', data.message); // Debug için hata mesajını konsola yazdır
+                    alert('Hata: ' + data.message);
                 }
             })
             .catch(error => {
-                console.error('Error:', error);
-                alert('Bir hata oluştu');
+                console.error('AJAX Hatası:', error); // Debug için hatayı konsola yazdır
+                alert('Bir hata oluştu: ' + error.message);
             });
     }
 
@@ -586,14 +610,29 @@ $takim_proje_count = count(array_filter($dosyalar, function($d) { return $d['dos
         })
         .then(response => response.json())
         .then(data => {
+            console.log('İşlem ekleme yanıtı:', data); // Debug için yanıtı konsola yazdır
+
             if(data.success) {
                 alert('İşlem başarıyla eklendi');
                 bootstrap.Modal.getInstance(document.getElementById('islemEkleModal')).hide();
-                showMuhasebeDetay(currentDosyaId);
+                showMuhasebeDetay(currentDosyaId); // Listeyi güncelle
             } else {
+                console.error('Hata:', data.message); // Debug için hata mesajını konsola yazdır
                 alert('Bir hata oluştu: ' + data.message);
             }
+        })
+        .catch(error => {
+            console.error('AJAX Hatası:', error); // Debug için hatayı konsola yazdır
+            alert('Bir hata oluştu: ' + error.message);
         });
+    });
+
+    // Yapılan ödeme değiştiğinde kalan tutarı güncelle
+    document.getElementById('yapilanTutar').addEventListener('input', function() {
+        const toplamTutar = parseFloat(document.getElementById('toplamTutar').value) || 0;
+        const yapilanTutar = parseFloat(this.value) || 0;
+        const kalanTutar = toplamTutar - yapilanTutar;
+        document.getElementById('kalanTutar').value = kalanTutar.toFixed(2);
     });
     </script>
 </body>

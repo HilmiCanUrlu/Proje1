@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Anamakine: 127.0.0.1
--- Üretim Zamanı: 02 Mar 2025, 15:45:51
+-- Üretim Zamanı: 16 Nis 2025, 12:59:09
 -- Sunucu sürümü: 10.4.32-MariaDB
 -- PHP Sürümü: 8.2.12
 
@@ -48,9 +48,29 @@ CREATE TABLE `dosyalar` (
 --
 
 INSERT INTO `dosyalar` (`dosya_id`, `izin_id`, `personel_id`, `musteri_id`, `olusturma_tarihi`, `islem_turu`, `dosya_turu`, `il`, `ilce`, `mahalle`, `ada`, `parsel`, `dosya_durumu`) VALUES
-(1, NULL, 1, NULL, '2025-03-02 13:04:21', 'İfraz Dosyası', 'SHKM Dosyaları', 'BURDUR', 'GÖLHİSAR', 'kyk', '1', '129', 'Hazırlandı'),
-(2, NULL, 1, NULL, '2025-03-02 13:19:40', 'Yola Terk Dosyası', 'Takım Proje', 'BURDUR', 'GÖLHİSAR', 'kyk', '88', '200', 'Hazırlandı'),
-(3, NULL, 1, 4, '2025-03-02 14:40:31', 'Röperli Kroki', 'SHKM Dosyaları', 'ADANA', 'Akdeniz', 'kyk', '88', '129', 'Hazırlandı');
+(1, NULL, 1, NULL, '2025-03-02 10:04:21', 'İfraz Dosyası', 'SHKM Dosyaları', 'BURDUR', 'GÖLHİSAR', 'kyk', '1', '129', 'Hazırlandı'),
+(2, NULL, 1, 5, '2025-03-02 10:19:40', 'Yola Terk Dosyası', 'Takım Proje', 'BURDUR', 'GÖLHİSAR', 'kyk', '88', '200', 'Hazırlandı'),
+(3, NULL, 1, 6, '2025-03-02 11:40:31', 'Röperli Kroki', 'SHKM Dosyaları', 'ADANA', 'Akdeniz', 'kyk', '88', '129', 'Hazırlandı');
+
+-- --------------------------------------------------------
+
+--
+-- Tablo için tablo yapısı `etkinlikler`
+--
+
+CREATE TABLE `etkinlikler` (
+  `id` int(11) NOT NULL,
+  `tarih` date NOT NULL,
+  `aciklama` text NOT NULL,
+  `olusturma_tarihi` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Tablo döküm verisi `etkinlikler`
+--
+
+INSERT INTO `etkinlikler` (`id`, `tarih`, `aciklama`, `olusturma_tarihi`) VALUES
+(11, '2025-04-17', 'uygulamadaki eksikler kapanacak', '2025-04-15 21:04:23');
 
 -- --------------------------------------------------------
 
@@ -66,6 +86,13 @@ CREATE TABLE `muhasebe` (
   `yapilan_odeme` decimal(10,2) NOT NULL,
   `aciklama` text DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Tablo döküm verisi `muhasebe`
+--
+
+INSERT INTO `muhasebe` (`muhasebe_id`, `musteri_id`, `toplam_tutar`, `kalan_tutar`, `yapilan_odeme`, `aciklama`) VALUES
+(1, 6, 5000.00, 4990.00, 10.00, '');
 
 -- --------------------------------------------------------
 
@@ -117,7 +144,8 @@ CREATE TABLE `personel` (
 --
 
 INSERT INTO `personel` (`personel_id`, `ad`, `soyad`, `kullanici_adi`, `email`, `sifre`, `tc_kimlik_no`, `telefon`) VALUES
-(1, 'Mehmet', 'Erkal', 'admin', 'admin@example.com', '123456', '12345678901', '5551234567');
+(1, 'Mehmet', 'Erkal', 'admin', 'admin@example.com', '123456', '12345678901', '5551234'),
+(3, 'Hilmi Can', 'Ürlü', 'dev', 'hilmi.urlu07@gmail.com', '123456', '12345678905', '12345678999');
 
 -- --------------------------------------------------------
 
@@ -139,9 +167,15 @@ CREATE TABLE `sistem_loglar` (
 --
 
 INSERT INTO `sistem_loglar` (`log_id`, `personel_id`, `islem_tipi`, `islem_detay`, `ip_adresi`, `tarih`) VALUES
-(1, 1, 'DOSYA_EKLE', 'Yeni dosya eklendi: SHKM Dosyaları - deneme', '::1', '2025-03-02 13:04:21'),
-(2, 1, 'DOSYA_EKLE', 'Yeni dosya eklendi: Takım Proje - deneme2', '::1', '2025-03-02 13:19:40'),
-(3, 1, 'DOSYA_EKLE', 'Yeni dosya eklendi: SHKM Dosyaları - Müşteri ID: 4', '::1', '2025-03-02 14:40:31');
+(1, 1, 'DOSYA_EKLE', 'Yeni dosya eklendi: SHKM Dosyaları - deneme', '::1', '2025-03-02 10:04:21'),
+(2, 1, 'DOSYA_EKLE', 'Yeni dosya eklendi: Takım Proje - deneme2', '::1', '2025-03-02 10:19:40'),
+(3, 1, 'DOSYA_EKLE', 'Yeni dosya eklendi: SHKM Dosyaları - Müşteri ID: 4', '::1', '2025-03-02 11:40:31'),
+(4, 1, 'LOGIN', 'Kullanıcı girişi yapıldı: admin', '::1', '2025-03-03 02:49:30'),
+(5, 1, 'LOGIN', 'Kullanıcı girişi yapıldı: admin', '::1', '2025-03-07 06:03:49'),
+(6, NULL, 'LOGIN_FAILED', 'Başarısız giriş denemesi: admin', '::1', '2025-04-13 10:43:17'),
+(7, 1, 'LOGIN', 'Kullanıcı girişi yapıldı: admin', '::1', '2025-04-13 10:46:06'),
+(8, 3, 'LOGIN', 'Kullanıcı girişi yapıldı: dev', '::1', '2025-04-15 22:27:26'),
+(9, 1, 'LOGIN', 'Kullanıcı girişi yapıldı: admin', '::1', '2025-04-15 22:53:37');
 
 --
 -- Dökümü yapılmış tablolar için indeksler
@@ -154,6 +188,12 @@ ALTER TABLE `dosyalar`
   ADD PRIMARY KEY (`dosya_id`),
   ADD KEY `personel_id` (`personel_id`),
   ADD KEY `musteri_id` (`musteri_id`);
+
+--
+-- Tablo için indeksler `etkinlikler`
+--
+ALTER TABLE `etkinlikler`
+  ADD PRIMARY KEY (`id`);
 
 --
 -- Tablo için indeksler `muhasebe`
@@ -198,10 +238,16 @@ ALTER TABLE `dosyalar`
   MODIFY `dosya_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
 
 --
+-- Tablo için AUTO_INCREMENT değeri `etkinlikler`
+--
+ALTER TABLE `etkinlikler`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=13;
+
+--
 -- Tablo için AUTO_INCREMENT değeri `muhasebe`
 --
 ALTER TABLE `muhasebe`
-  MODIFY `muhasebe_id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `muhasebe_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
 
 --
 -- Tablo için AUTO_INCREMENT değeri `musteriler`
@@ -213,13 +259,13 @@ ALTER TABLE `musteriler`
 -- Tablo için AUTO_INCREMENT değeri `personel`
 --
 ALTER TABLE `personel`
-  MODIFY `personel_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+  MODIFY `personel_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
 
 --
 -- Tablo için AUTO_INCREMENT değeri `sistem_loglar`
 --
 ALTER TABLE `sistem_loglar`
-  MODIFY `log_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+  MODIFY `log_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=10;
 
 --
 -- Dökümü yapılmış tablolar için kısıtlamalar

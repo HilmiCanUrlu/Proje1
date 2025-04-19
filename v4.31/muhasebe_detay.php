@@ -42,6 +42,14 @@ try {
         exit;
     }
 
+    // Retrieve izin_id for the file
+    $stmt = $conn->prepare("SELECT izin_id FROM dosyalar WHERE dosya_id = ?");
+    $stmt->execute([$dosya_id]);
+    $izin_id = $stmt->fetchColumn();
+
+    // Check if the current user is admin or matches izin_id
+    $isAuthorizedToEdit = ($_SESSION['personel_id'] == 1 || $_SESSION['personel_id'] == $izin_id);
+
     // Muhasebe tablosunun varlığını kontrol et
     $tableCheck = $conn->query("SHOW TABLES LIKE 'muhasebe'");
     if ($tableCheck->rowCount() == 0) {
@@ -88,9 +96,11 @@ try {
             'toplam_kalan' => $toplam_kalan
         ],
         'ilk_islem_var' => $ilk_islem_var,
+        'authorized' => $isAuthorizedToEdit,
         'debug' => [
             'dosya_id' => $dosya_id,
-            'musteri_id' => $musteri_id
+            'musteri_id' => $musteri_id,
+            'izin_id' => $izin_id
         ]
     ];
 

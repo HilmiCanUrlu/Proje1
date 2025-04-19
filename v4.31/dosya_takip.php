@@ -449,6 +449,9 @@ $takim_proje_count = count(array_filter($dosyalar, function($d) { return $d['dos
     let currentKalanTutar = 0;
     let isToplamTutarEditable = false;
 
+    // Store current user's personel_id
+    const currentPersonelId = <?php echo $_SESSION['personel_id']; ?>;
+
     function showMuhasebeDetay(dosyaId) {
         currentDosyaId = dosyaId;
         document.getElementById('islemDosyaId').value = dosyaId;
@@ -456,10 +459,24 @@ $takim_proje_count = count(array_filter($dosyalar, function($d) { return $d['dos
         fetch(`muhasebe_detay.php?dosya_id=${dosyaId}`)
             .then(response => response.json())
             .then(data => {
-                console.log('Muhasebe detay yanıtı:', data); // Debug için yanıtı konsola yazdır
+                console.log('Muhasebe detay yanıtı:', data);
 
                 if (data.success) {
-                    // Özet bilgileri güncelle
+                    // Check if user is authorized to edit total amount
+                    const isAuthorized = currentPersonelId == 1 || currentPersonelId == data.debug.izin_id;
+                    
+                    // Enable/disable the total amount change button based on authorization
+                    const toplamTutarDegistirBtn = document.getElementById('toplamTutarDegistir');
+                    if (toplamTutarDegistirBtn) {
+                        toplamTutarDegistirBtn.disabled = !isAuthorized;
+                        if (!isAuthorized) {
+                            toplamTutarDegistirBtn.title = "Bu işlem için yetkiniz bulunmamaktadır";
+                        } else {
+                            toplamTutarDegistirBtn.title = "Toplam tutarı değiştirmek için tıklayın";
+                        }
+                    }
+
+                    // Update summary information
                     document.getElementById('toplamTutarOzet').textContent = 
                         parseFloat(data.ozet.toplam_tutar).toLocaleString('tr-TR', {minimumFractionDigits: 2}) + ' ₺';
                     document.getElementById('yapilanOdemeOzet').textContent = 
@@ -467,7 +484,7 @@ $takim_proje_count = count(array_filter($dosyalar, function($d) { return $d['dos
                     document.getElementById('kalanTutarOzet').textContent = 
                         parseFloat(data.ozet.toplam_kalan).toLocaleString('tr-TR', {minimumFractionDigits: 2}) + ' ₺';
 
-                    // İşlemler tablosunu güncelle
+                    // Update transactions table
                     let islemlerHTML = '';
                     if (data.islemler && data.islemler.length > 0) {
                         data.islemler.forEach(islem => {
@@ -490,20 +507,20 @@ $takim_proje_count = count(array_filter($dosyalar, function($d) { return $d['dos
                     }
                     document.getElementById('muhasebeIslemlerListesi').innerHTML = islemlerHTML;
 
-                    // Modalı göster
+                    // Show modal
                     new bootstrap.Modal(document.getElementById('muhasebeModal')).show();
                 } else {
-                    console.error('Hata:', data.message); // Debug için hata mesajını konsola yazdır
+                    console.error('Hata:', data.message);
                     alert('Hata: ' + data.message);
                 }
             })
             .catch(error => {
-                console.error('AJAX Hatası:', error); // Debug için hatayı konsola yazdır
+                console.error('AJAX Hatası:', error);
                 alert('Bir hata oluştu: ' + error.message);
             });
     }
 
-    // Toplam tutar değiştirme butonunu yönet
+    // Update the total amount change handler
     document.getElementById('toplamTutarDegistir').addEventListener('click', function() {
         const toplamTutarInput = document.getElementById('toplamTutar');
         const yapilanTutarInput = document.getElementById('yapilanTutar');
@@ -511,16 +528,16 @@ $takim_proje_count = count(array_filter($dosyalar, function($d) { return $d['dos
         isToplamTutarEditable = !isToplamTutarEditable;
         
         if (isToplamTutarEditable) {
-            // Düzenleme modunu aç
+            // Enable edit mode
             toplamTutarInput.readOnly = false;
-            yapilanTutarInput.required = false; // Yapılan ödeme zorunlu değil
-            yapilanTutarInput.value = ''; // Yapılan ödemeyi temizle
-            kalanTutarInput.value = ''; // Kalan tutarı temizle
+            yapilanTutarInput.required = false;
+            yapilanTutarInput.value = '';
+            kalanTutarInput.value = '';
             this.classList.remove('btn-warning');
             this.classList.add('btn-success');
             this.textContent = 'Değişikliği Onayla';
         } else {
-            // Değişikliği onayla ve kaydet
+            // Confirm and save changes
             toplamTutarInput.readOnly = true;
             this.classList.remove('btn-success');
             this.classList.add('btn-warning');
@@ -528,25 +545,34 @@ $takim_proje_count = count(array_filter($dosyalar, function($d) { return $d['dos
             
             const yeniToplamTutar = parseFloat(toplamTutarInput.value) || 0;
             
-            // Toplam tutar değişikliğini kaydet
+            // Save total amount change using the new endpoint
             const formData = new FormData();
             formData.append('dosya_id', currentDosyaId);
             formData.append('toplam_tutar', yeniToplamTutar);
-            formData.append('is_toplam_tutar_update', '1'); // Toplam tutar güncelleme flag'i
             
-            fetch('islem_ekle.php', {
+            fetch('update_toplam_tutar.php', {
                 method: 'POST',
                 body: formData
             })
             .then(response => response.json())
             .then(data => {
                 if(data.success) {
-                    // Başarılı olursa muhasebe detayını yenile
+                    // Refresh the muhasebe details
                     showMuhasebeDetay(currentDosyaId);
-                    yapilanTutarInput.required = true; // Yapılan ödeme tekrar zorunlu
+                    yapilanTutarInput.required = true;
+                    alert('Toplam tutar başarıyla güncellendi');
                 } else {
                     alert('Toplam tutar güncellenirken bir hata oluştu: ' + data.message);
+                    // Revert the button state
+                    this.classList.remove('btn-warning');
+                    this.classList.add('btn-success');
+                    this.textContent = 'Değişikliği Onayla';
+                    toplamTutarInput.readOnly = false;
                 }
+            })
+            .catch(error => {
+                console.error('AJAX Hatası:', error);
+                alert('Bir hata oluştu: ' + error.message);
             });
         }
     });

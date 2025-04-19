@@ -67,6 +67,31 @@ $eventQuery = "SELECT * FROM etkinlikler WHERE dosya_linki = :dosya_id";
 $eventStmt = $db->prepare($eventQuery);
 $eventStmt->execute([':dosya_id' => $dosya['dosya_id']]);
 $events = $eventStmt->fetchAll(PDO::FETCH_ASSOC);
+
+// Kullanıcı oturumundan personel_id'yi al
+$currentUserId = $_SESSION['personel_id'];
+
+// Tüm personel bilgilerini çek
+$kidemliQuery = "SELECT personel_id, ad, soyad FROM personel ORDER BY ad, soyad";
+$kidemliStmt = $db->prepare($kidemliQuery);
+$kidemliStmt->execute();
+$kidemliPersonelList = $kidemliStmt->fetchAll(PDO::FETCH_ASSOC);
+
+// Fetch current personnel assignments
+$sorumluQuery = "SELECT ad, soyad FROM personel WHERE personel_id = :personel_id";
+$sorumluStmt = $db->prepare($sorumluQuery);
+$sorumluStmt->execute([':personel_id' => $dosya['personel_id']]);
+$sorumluPersonel = $sorumluStmt->fetch(PDO::FETCH_ASSOC);
+
+$kidemliQuery = "SELECT ad, soyad FROM personel WHERE personel_id = :izin_id";
+$kidemliStmt = $db->prepare($kidemliQuery);
+$kidemliStmt->execute([':izin_id' => $dosya['izin_id']]);
+$kidemliPersonel = $kidemliStmt->fetch(PDO::FETCH_ASSOC);
+
+// Check if the current user is admin or matches izin_id
+$isAuthorizedToEdit = ($currentUserId == 1 || $currentUserId == $dosya['izin_id']);
+
+// Display and allow updates for assigned personnel
 ?>
 
 <!DOCTYPE html>
@@ -377,7 +402,10 @@ $events = $eventStmt->fetchAll(PDO::FETCH_ASSOC);
                                             <div class="card bg-primary text-white">
                                                 <div class="card-body">
                                                     <h6>Toplam Tutar</h6>
-                                                    <h3 id="toplamTutarOzet"><?php echo number_format($muhasebe['toplam_tutar'] ?? 0, 2, ',', '.'); ?> ₺</h3>
+                                                    <input type="number" class="form-control" id="toplamTutar" name="toplam_tutar" step="0.01" value="<?php echo $muhasebe['toplam_tutar'] ?? 0; ?>" <?php echo $isAuthorizedToEdit ? '' : 'readonly'; ?>>
+                                                    <?php if ($isAuthorizedToEdit): ?>
+                                                        <button class="btn btn-success mt-2" onclick="updateToplamTutar()">Güncelle</button>
+                                                    <?php endif; ?>
                                                 </div>
                                             </div>
                                         </div>
@@ -440,27 +468,48 @@ $events = $eventStmt->fetchAll(PDO::FETCH_ASSOC);
                             <div class="col-md-6">
                                 <div class="section-card">
                                     <div class="section-title">
-                                        <i class="bi bi-people-fill"></i>
-                                        Yetkili Personel
-                                        <button class="btn btn-secondary btn-sm ms-auto" onclick="editYetkiliPersonel()">Personel Ekle</button>
+                                        <i class="bi bi-person-badge-fill"></i>
+                                        Kıdemli Personel
                                     </div>
-                                    <div class="table-responsive">
-                                        <table class="table table-sm">
-                                            <thead>
-                                                <tr>
-                                                    <th>Personel</th>
-                                                    <th>Yetki</th>
-                                                    <th>Durum</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                <tr>
-                                                    <td><?php echo htmlspecialchars($dosya['personel_ad'] . ' ' . $dosya['personel_soyad']); ?></td>
-                                                    <td>Tam Yetki</td>
-                                                    <td><span class="badge bg-success">Aktif</span></td>
-                                                </tr>
-                                            </tbody>
-                                        </table>
+                                    <div class="mb-3">
+                                        <?php if ($currentUserId == 1): ?>
+                                            <select class="form-select" id="kidemliPersonelSelect">
+                                                <option value="">Personel Seçiniz</option>
+                                                <?php foreach ($kidemliPersonelList as $personel): ?>
+                                                    <option value="<?php echo $personel['personel_id']; ?>" <?php echo $personel['personel_id'] == $dosya['izin_id'] ? 'selected' : ''; ?>>
+                                                        <?php echo htmlspecialchars($personel['ad'] . ' ' . $personel['soyad']); ?>
+                                                    </option>
+                                                <?php endforeach; ?>
+                                            </select>
+                                            <button class="btn btn-primary mt-2" onclick="assignKidemliPersonel()">Kaydet</button>
+                                        <?php else: ?>
+                                            <span><?php echo htmlspecialchars($kidemliPersonel['ad'] . ' ' . $kidemliPersonel['soyad']); ?></span>
+                                        <?php endif; ?>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Sorumlu personel seçeneği -->
+                            <div class="col-md-6">
+                                <div class="section-card">
+                                    <div class="section-title">
+                                        <i class="bi bi-person-badge-fill"></i>
+                                        Sorumlu Personel
+                                    </div>
+                                    <div class="mb-3">
+                                        <?php if ($currentUserId == 1): ?>
+                                            <select class="form-select" id="sorumluPersonelSelect">
+                                                <option value="">Personel Seçiniz</option>
+                                                <?php foreach ($kidemliPersonelList as $personel): ?>
+                                                    <option value="<?php echo $personel['personel_id']; ?>" <?php echo $personel['personel_id'] == $dosya['personel_id'] ? 'selected' : ''; ?>>
+                                                        <?php echo htmlspecialchars($personel['ad'] . ' ' . $personel['soyad']); ?>
+                                                    </option>
+                                                <?php endforeach; ?>
+                                            </select>
+                                            <button class="btn btn-primary mt-2" onclick="assignSorumluPersonel()">Kaydet</button>
+                                        <?php else: ?>
+                                            <span><?php echo htmlspecialchars($sorumluPersonel['ad'] . ' ' . $sorumluPersonel['soyad']); ?></span>
+                                        <?php endif; ?>
                                     </div>
                                 </div>
                             </div>
@@ -498,14 +547,61 @@ $events = $eventStmt->fetchAll(PDO::FETCH_ASSOC);
                             <div class="section-title">
                                 <i class="bi bi-paperclip"></i>
                                 Dosya Ekleri
-                                <button class="btn btn-secondary btn-sm ms-auto">Ek Yükle</button>
+                                <button class="btn btn-secondary btn-sm ms-auto" data-bs-toggle="modal" data-bs-target="#fileUploadModal">Ek Yükle</button>
                             </div>
-                            <div class="text-center text-muted py-4">
-                                Dosya Eki Yüklenmedi
-                                <div class="mt-2">
-                                    <small>Dosyanıza ait ekler yükleyebilirsiniz.</small><br>
-                                    <small>Yüklenen ekleri firma personeli görüntüleyebilir.</small>
-                                </div>
+                            <div id="filesList">
+                                <?php
+                                $files_query = $db->prepare("SELECT f.*, p.ad, p.soyad 
+                                                            FROM files f 
+                                                            LEFT JOIN personel p ON f.uploaded_by = p.personel_id 
+                                                            WHERE f.dosya_id = ? 
+                                                            ORDER BY f.upload_date DESC");
+                                $files_query->execute([$dosya['dosya_id']]);
+                                $files = $files_query->fetchAll(PDO::FETCH_ASSOC);
+                                
+                                if (count($files) > 0): ?>
+                                    <div class="table-responsive">
+                                        <table class="table table-striped">
+                                            <thead>
+                                                <tr>
+                                                    <th>Dosya Adı</th>
+                                                    <th>Boyut</th>
+                                                    <th>Yükleyen</th>
+                                                    <th>Tarih</th>
+                                                    <th>İşlemler</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <?php foreach ($files as $file): ?>
+                                                    <tr id="file-row-<?php echo $file['file_id']; ?>">
+                                                        <td><?php echo htmlspecialchars($file['original_name']); ?></td>
+                                                        <td><?php echo number_format($file['file_size'] / 1024, 2) . ' KB'; ?></td>
+                                                        <td><?php echo htmlspecialchars($file['ad'] . ' ' . $file['soyad']); ?></td>
+                                                        <td><?php echo date('d.m.Y H:i', strtotime($file['upload_date'])); ?></td>
+                                                        <td>
+                                                            <a href="<?php echo htmlspecialchars($file['file_path']); ?>" class="btn btn-sm btn-info" download>
+                                                                <i class="bi bi-download"></i> İndir
+                                                            </a>
+                                                            <?php if ($_SESSION['personel_id'] == 1): ?>
+                                                                <button class="btn btn-sm btn-danger" onclick="deleteFile(<?php echo $file['file_id']; ?>)">
+                                                                    <i class="bi bi-trash"></i> Sil
+                                                                </button>
+                                                            <?php endif; ?>
+                                                        </td>
+                                                    </tr>
+                                                <?php endforeach; ?>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                <?php else: ?>
+                                    <div class="alert alert-info">
+                                        Henüz dosya yüklenmemiş.
+                                        <div class="mt-2">
+                                            <small>Dosyanıza ait ekler yükleyebilirsiniz.</small><br>
+                                            <small>Yüklenen ekleri firma personeli görüntüleyebilir.</small>
+                                        </div>
+                                    </div>
+                                <?php endif; ?>
                             </div>
                         </div>
 
@@ -661,13 +757,262 @@ $events = $eventStmt->fetchAll(PDO::FETCH_ASSOC);
         </div>
     </div>
 
+    <!-- File Upload Modal -->
+    <div class="modal fade" id="fileUploadModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Dosya Yükle</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="uploadForm" enctype="multipart/form-data">
+                        <input type="hidden" name="dosya_id" value="<?php echo $dosya['dosya_id']; ?>">
+                        <div class="mb-3">
+                            <label for="fileInput" class="form-label">Dosya Seçin</label>
+                            <input type="file" class="form-control" name="file" id="fileInput" required>
+                        </div>
+                        <div class="progress mb-3 d-none">
+                            <div class="progress-bar" role="progressbar" style="width: 0%"></div>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Yükle</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-    // Sayfa yüklendiğinde muhasebe bilgilerini çek
     document.addEventListener('DOMContentLoaded', function() {
-        showMuhasebeDetay(<?php echo $dosya['dosya_id']; ?>, false);
+        // Initialize variables with null checks
+        const uploadForm = document.getElementById('uploadForm');
+        const fileInput = document.getElementById('fileInput');
+        const progressBar = document.querySelector('.progress');
+        const progressBarInner = progressBar?.querySelector('.progress-bar');
+        
+        // Add event listener for file input change
+        if (fileInput) {
+            fileInput.addEventListener('change', function(e) {
+                const file = e.target.files[0];
+                if (file) {
+                    // Validate file size (örneğin max 50MB)
+                    const maxSize = 50 * 1024 * 1024; // 50MB in bytes
+                    if (file.size > maxSize) {
+                        alert('Dosya boyutu çok büyük. Maksimum 50MB yükleyebilirsiniz.');
+                        fileInput.value = '';
+                        return;
+                    }
+                }
+            });
+        }
+        
+        // Add event listener for file upload form
+        if (uploadForm) {
+            uploadForm.addEventListener('submit', async function(e) {
+                e.preventDefault();
+                
+                // Disable submit button and show loading state
+                const submitButton = this.querySelector('button[type="submit"]');
+                if (submitButton) {
+                    submitButton.disabled = true;
+                    submitButton.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Yükleniyor...';
+                }
+                
+                // Show progress bar
+                if (progressBar) {
+                    progressBar.classList.remove('d-none');
+                    if (progressBarInner) {
+                        progressBarInner.style.width = '0%';
+                        progressBarInner.textContent = '0%';
+                    }
+                }
+
+                try {
+                    const formData = new FormData(this);
+                    
+                    // Simulate progress (since we can't get real progress from PHP)
+                    let progress = 0;
+                    const progressInterval = setInterval(() => {
+                        progress += 10;
+                        if (progress <= 90) {
+                            if (progressBarInner) {
+                                progressBarInner.style.width = progress + '%';
+                                progressBarInner.textContent = progress + '%';
+                            }
+                        }
+                    }, 500);
+
+                    const response = await fetch('upload_file.php', {
+                        method: 'POST',
+                        body: formData
+                    });
+
+                    clearInterval(progressInterval);
+                    
+                    // Show 100% progress
+                    if (progressBarInner) {
+                        progressBarInner.style.width = '100%';
+                        progressBarInner.textContent = '100%';
+                    }
+
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                        // Hide modal and reset form
+                        const modal = bootstrap.Modal.getInstance(document.getElementById('fileUploadModal'));
+                        if (modal) {
+                            modal.hide();
+                        }
+                        this.reset();
+                        
+                        // Show success message
+                        alert('Dosya başarıyla yüklendi.');
+                        
+                        // Refresh the files list by reloading the page
+                        location.reload();
+                    } else {
+                        throw new Error(data.message || 'Dosya yükleme başarısız oldu.');
+                    }
+                } catch (error) {
+                    console.error('Yükleme hatası:', error);
+                    alert('Hata: ' + (error.message || 'Dosya yükleme sırasında bir hata oluştu.'));
+                } finally {
+                    // Re-enable submit button
+                    if (submitButton) {
+                        submitButton.disabled = false;
+                        submitButton.textContent = 'Yükle';
+                    }
+                    
+                    // Hide progress bar after a short delay
+                    setTimeout(() => {
+                        if (progressBar) {
+                            progressBar.classList.add('d-none');
+                        }
+                    }, 1000);
+                }
+            });
+        }
+
+        function showMuhasebeDetay(dosyaId, showModal = false) {
+            fetch(`muhasebe_detay.php?dosya_id=${dosyaId}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // Update summary cards
+                        const formatNumber = (num) => parseFloat(num).toLocaleString('tr-TR', {minimumFractionDigits: 2}) + ' ₺';
+                        
+                        // Update summary cards on the main page with null checks
+                        if (document.getElementById('toplamTutarOzet')) document.getElementById('toplamTutarOzet').textContent = formatNumber(data.ozet.toplam_tutar);
+                        if (document.getElementById('yapilanOdemeOzet')) document.getElementById('yapilanOdemeOzet').textContent = formatNumber(data.ozet.toplam_yapilan);
+                        if (document.getElementById('kalanTutarOzet')) document.getElementById('kalanTutarOzet').textContent = formatNumber(data.ozet.toplam_kalan);
+
+                        // Update modal summary cards with null checks
+                        const modalToplamTutar = document.getElementById('modalToplamTutar');
+                        const modalYapilanOdeme = document.getElementById('modalYapilanOdeme');
+                        const modalKalanTutar = document.getElementById('modalKalanTutar');
+                        
+                        if (modalToplamTutar) modalToplamTutar.textContent = formatNumber(data.ozet.toplam_tutar);
+                        if (modalYapilanOdeme) modalYapilanOdeme.textContent = formatNumber(data.ozet.toplam_yapilan);
+                        if (modalKalanTutar) modalKalanTutar.textContent = formatNumber(data.ozet.toplam_kalan);
+
+                        // Update transactions table
+                        const muhasebeIslemlerListesi = document.getElementById('muhasebeIslemlerListesi');
+                        if (muhasebeIslemlerListesi) {
+                            let islemlerHTML = '';
+                            if (data.islemler && data.islemler.length > 0) {
+                                data.islemler.forEach(islem => {
+                                    const tarih = new Date(islem.tarih);
+                                    const formatliTarih = tarih.toLocaleString('tr-TR');
+                                    islemlerHTML += `
+                                        <tr>
+                                            <td>${islem.muhasebe_id}</td>
+                                            <td>${formatliTarih}</td>
+                                            <td>${formatNumber(islem.toplam_tutar)}</td>
+                                            <td>${formatNumber(islem.yapilan_odeme)}</td>
+                                            <td>${formatNumber(islem.kalan_tutar)}</td>
+                                            <td>${islem.aciklama || ''}</td>
+                                        </tr>
+                                    `;
+                                });
+                            } else {
+                                islemlerHTML = '<tr><td colspan="6" class="text-center">Henüz işlem bulunmuyor</td></tr>';
+                            }
+                            muhasebeIslemlerListesi.innerHTML = islemlerHTML;
+                        }
+
+                        // Show modal if requested and modal exists
+                        if (showModal) {
+                            const muhasebeModal = document.getElementById('muhasebeModal');
+                            if (muhasebeModal) {
+                                const modal = new bootstrap.Modal(muhasebeModal);
+                                modal.show();
+                            }
+                        }
+                    } else {
+                        alert('Hata: ' + data.message);
+                    }
+                })
+                .catch(error => {
+                    console.error('AJAX Hatası:', error);
+                    alert('Bir hata oluştu: ' + error.message);
+                });
+        }
+
+        // Call showMuhasebeDetay only if we have a dosya_id
+        const dosyaId = <?php echo isset($dosya['dosya_id']) ? $dosya['dosya_id'] : 'null'; ?>;
+        if (dosyaId !== null) {
+            showMuhasebeDetay(dosyaId, false);
+        }
+
+        // Mark active menu
         markActiveMenu();
     });
+
+    function deleteFile(fileId) {
+        if (!confirm('Bu dosyayı silmek istediğinizden emin misiniz?')) {
+            return;
+        }
+        
+        fetch('delete_file.php', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: 'file_id=' + fileId
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                const fileRow = document.getElementById('file-row-' + fileId);
+                if (fileRow) {
+                    fileRow.remove();
+                }
+                
+                const filesList = document.getElementById('filesList');
+                const tbody = filesList?.querySelector('tbody');
+                if (!tbody || tbody.children.length === 0) {
+                    if (filesList) {
+                        filesList.innerHTML = `
+                            <div class="alert alert-info">
+                                Henüz dosya yüklenmemiş.
+                                <div class="mt-2">
+                                    <small>Dosyanıza ait ekler yükleyebilirsiniz.</small><br>
+                                    <small>Yüklenen ekleri firma personeli görüntüleyebilir.</small>
+                                </div>
+                            </div>
+                        `;
+                    }
+                }
+            } else {
+                alert('Hata: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Silme hatası:', error);
+            alert('Dosya silme sırasında bir hata oluştu.');
+        });
+    }
 
     // Parsel Bilgileri Düzenleme
     function editParselBilgileri() {
@@ -970,20 +1315,20 @@ $events = $eventStmt->fetchAll(PDO::FETCH_ASSOC);
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    // Güncelle hem modal hem de ana sayfadaki özet kartları
+                    // Update summary cards
                     const formatNumber = (num) => parseFloat(num).toLocaleString('tr-TR', {minimumFractionDigits: 2}) + ' ₺';
                     
-                    // Ana sayfadaki özet kartları güncelle
+                    // Update summary cards on the main page
                     document.getElementById('toplamTutarOzet').textContent = formatNumber(data.ozet.toplam_tutar);
                     document.getElementById('yapilanOdemeOzet').textContent = formatNumber(data.ozet.toplam_yapilan);
                     document.getElementById('kalanTutarOzet').textContent = formatNumber(data.ozet.toplam_kalan);
 
-                    // Modal içindeki özet kartları güncelle
+                    // Update modal summary cards
                     document.getElementById('modalToplamTutar').textContent = formatNumber(data.ozet.toplam_tutar);
                     document.getElementById('modalYapilanOdeme').textContent = formatNumber(data.ozet.toplam_yapilan);
                     document.getElementById('modalKalanTutar').textContent = formatNumber(data.ozet.toplam_kalan);
 
-                    // İşlemler tablosunu güncelle
+                    // Update transactions table
                     let islemlerHTML = '';
                     if (data.islemler && data.islemler.length > 0) {
                         data.islemler.forEach(islem => {
@@ -1006,7 +1351,15 @@ $events = $eventStmt->fetchAll(PDO::FETCH_ASSOC);
                     }
                     document.getElementById('muhasebeIslemlerListesi').innerHTML = islemlerHTML;
 
-                    // Modalı sadece istenirse göster
+                    // Disable the button if not authorized
+                    const toplamTutarDegistirButton = document.getElementById('toplamTutarDegistir');
+                    if (!data.authorized) {
+                        toplamTutarDegistirButton.disabled = true;
+                    } else {
+                        toplamTutarDegistirButton.disabled = false;
+                    }
+
+                    // Show modal if requested
                     if (showModal) {
                         new bootstrap.Modal(document.getElementById('muhasebeModal')).show();
                     }
@@ -1155,6 +1508,91 @@ $events = $eventStmt->fetchAll(PDO::FETCH_ASSOC);
         const iframe = document.getElementById('etkinlikIframe');
         iframe.src = `etkinlik_detay.php?etkinlik_id=${eventId}`;
         modal.show();
+    }
+
+    function assignKidemliPersonel() {
+        const selectedPersonelId = document.getElementById('kidemliPersonelSelect').value;
+        if (!selectedPersonelId) {
+            alert('Lütfen bir personel seçin.');
+            return;
+        }
+        
+        const formData = new FormData();
+        formData.append('dosya_id', <?php echo $dosya['dosya_id']; ?>);
+        formData.append('personel_id', selectedPersonelId);
+        
+        fetch('update_izin_id.php', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('Kıdemli personel başarıyla atandı');
+                location.reload();
+            } else {
+                alert('Bir hata oluştu: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('AJAX Hatası:', error);
+            alert('Bir hata oluştu: ' + error.message);
+        });
+    }
+
+    function assignSorumluPersonel() {
+        const selectedPersonelId = document.getElementById('sorumluPersonelSelect').value;
+        if (!selectedPersonelId) {
+            alert('Lütfen bir personel seçin.');
+            return;
+        }
+        
+        const formData = new FormData();
+        formData.append('dosya_id', <?php echo $dosya['dosya_id']; ?>);
+        formData.append('personel_id', selectedPersonelId);
+        
+        fetch('update_sorumlu_id.php', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('Sorumlu personel başarıyla atandı');
+                location.reload();
+            } else {
+                alert('Bir hata oluştu: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('AJAX Hatası:', error);
+            alert('Bir hata oluştu: ' + error.message);
+        });
+    }
+
+    function updateToplamTutar() {
+        const toplamTutar = document.getElementById('toplamTutar').value;
+        const formData = new FormData();
+        formData.append('dosya_id', <?php echo $dosya['dosya_id']; ?>);
+        formData.append('toplam_tutar', toplamTutar);
+
+        fetch('update_toplam_tutar.php', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('Toplam tutar başarıyla güncellendi');
+                location.reload();
+            } else {
+                alert('Bir hata oluştu: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('AJAX Hatası:', error);
+            alert('Bir hata oluştu: ' + error.message);
+        });
     }
     </script>
 </body>

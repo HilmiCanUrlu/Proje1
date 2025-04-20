@@ -547,61 +547,122 @@ $isAuthorizedToEdit = ($currentUserId == 1 || $currentUserId == $dosya['izin_id'
                             <div class="section-title">
                                 <i class="bi bi-paperclip"></i>
                                 Dosya Ekleri
-                                <button class="btn btn-secondary btn-sm ms-auto" data-bs-toggle="modal" data-bs-target="#fileUploadModal">Ek Yükle</button>
+                                <div class="btn-group ms-auto">
+                                    <button class="btn btn-secondary btn-sm" onclick="toggleFileView('active')">Aktif Dosyalar</button>
+                                    <button class="btn btn-secondary btn-sm" onclick="toggleFileView('deleted')">Silinen Dosyalar</button>
+                                    <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#fileUploadModal">Ek Yükle</button>
+                                </div>
                             </div>
                             <div id="filesList">
                                 <?php
+                                // Aktif dosyaları getir
                                 $files_query = $db->prepare("SELECT f.*, p.ad, p.soyad 
                                                             FROM files f 
                                                             LEFT JOIN personel p ON f.uploaded_by = p.personel_id 
-                                                            WHERE f.dosya_id = ? 
+                                                            WHERE f.dosya_id = ? AND f.is_deleted = 0
                                                             ORDER BY f.upload_date DESC");
                                 $files_query->execute([$dosya['dosya_id']]);
-                                $files = $files_query->fetchAll(PDO::FETCH_ASSOC);
+                                $active_files = $files_query->fetchAll(PDO::FETCH_ASSOC);
                                 
-                                if (count($files) > 0): ?>
-                                    <div class="table-responsive">
-                                        <table class="table table-striped">
-                                            <thead>
-                                                <tr>
-                                                    <th>Dosya Adı</th>
-                                                    <th>Boyut</th>
-                                                    <th>Yükleyen</th>
-                                                    <th>Tarih</th>
-                                                    <th>İşlemler</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                <?php foreach ($files as $file): ?>
-                                                    <tr id="file-row-<?php echo $file['file_id']; ?>">
-                                                        <td><?php echo htmlspecialchars($file['original_name']); ?></td>
-                                                        <td><?php echo number_format($file['file_size'] / 1024, 2) . ' KB'; ?></td>
-                                                        <td><?php echo htmlspecialchars($file['ad'] . ' ' . $file['soyad']); ?></td>
-                                                        <td><?php echo date('d.m.Y H:i', strtotime($file['upload_date'])); ?></td>
-                                                        <td>
-                                                            <a href="<?php echo htmlspecialchars($file['file_path']); ?>" class="btn btn-sm btn-info" download>
-                                                                <i class="bi bi-download"></i> İndir
-                                                            </a>
-                                                            <?php if ($_SESSION['personel_id'] == 1): ?>
-                                                                <button class="btn btn-sm btn-danger" onclick="deleteFile(<?php echo $file['file_id']; ?>)">
-                                                                    <i class="bi bi-trash"></i> Sil
-                                                                </button>
-                                                            <?php endif; ?>
-                                                        </td>
+                                // Silinen dosyaları getir
+                                $deleted_files_query = $db->prepare("SELECT f.*, p.ad, p.soyad 
+                                                                   FROM files f 
+                                                                   LEFT JOIN personel p ON f.uploaded_by = p.personel_id 
+                                                                   WHERE f.dosya_id = ? AND f.is_deleted = 1
+                                                                   ORDER BY f.upload_date DESC");
+                                $deleted_files_query->execute([$dosya['dosya_id']]);
+                                $deleted_files = $deleted_files_query->fetchAll(PDO::FETCH_ASSOC);
+                                ?>
+                                
+                                <!-- Aktif Dosyalar Tablosu -->
+                                <div id="activeFiles">
+                                    <?php if (count($active_files) > 0): ?>
+                                        <div class="table-responsive">
+                                            <table class="table table-striped">
+                                                <thead>
+                                                    <tr>
+                                                        <th>Dosya Adı</th>
+                                                        <th>Boyut</th>
+                                                        <th>Yükleyen</th>
+                                                        <th>Tarih</th>
+                                                        <th>İşlemler</th>
                                                     </tr>
-                                                <?php endforeach; ?>
-                                            </tbody>
-                                        </table>
-                                    </div>
-                                <?php else: ?>
-                                    <div class="alert alert-info">
-                                        Henüz dosya yüklenmemiş.
-                                        <div class="mt-2">
-                                            <small>Dosyanıza ait ekler yükleyebilirsiniz.</small><br>
-                                            <small>Yüklenen ekleri firma personeli görüntüleyebilir.</small>
+                                                </thead>
+                                                <tbody>
+                                                    <?php foreach ($active_files as $file): ?>
+                                                        <tr id="file-row-<?php echo $file['file_id']; ?>">
+                                                            <td><?php echo htmlspecialchars($file['original_name']); ?></td>
+                                                            <td><?php echo number_format($file['file_size'] / 1024, 2) . ' KB'; ?></td>
+                                                            <td><?php echo htmlspecialchars($file['ad'] . ' ' . $file['soyad']); ?></td>
+                                                            <td><?php echo date('d.m.Y H:i', strtotime($file['upload_date'])); ?></td>
+                                                            <td>
+                                                                <a href="<?php echo htmlspecialchars($file['file_path']); ?>" class="btn btn-sm btn-info" download>
+                                                                    <i class="bi bi-download"></i> İndir
+                                                                </a>
+                                                                <?php if ($_SESSION['personel_id'] == 1): ?>
+                                                                    <button class="btn btn-sm btn-danger" onclick="softDeleteFile(<?php echo $file['file_id']; ?>)">
+                                                                        <i class="bi bi-trash"></i> Sil
+                                                                    </button>
+                                                                <?php endif; ?>
+                                                            </td>
+                                                        </tr>
+                                                    <?php endforeach; ?>
+                                                </tbody>
+                                            </table>
                                         </div>
-                                    </div>
-                                <?php endif; ?>
+                                    <?php else: ?>
+                                        <div class="alert alert-info">
+                                            Henüz dosya yüklenmemiş.
+                                            <div class="mt-2">
+                                                <small>Dosyanıza ait ekler yükleyebilirsiniz.</small><br>
+                                                <small>Yüklenen ekleri firma personeli görüntüleyebilir.</small>
+                                            </div>
+                                        </div>
+                                    <?php endif; ?>
+                                </div>
+
+                                <!-- Silinen Dosyalar Tablosu -->
+                                <div id="deletedFiles" style="display: none;">
+                                    <?php if (count($deleted_files) > 0): ?>
+                                        <div class="table-responsive">
+                                            <table class="table table-striped">
+                                                <thead>
+                                                    <tr>
+                                                        <th>Dosya Adı</th>
+                                                        <th>Boyut</th>
+                                                        <th>Yükleyen</th>
+                                                        <th>Silinme Tarihi</th>
+                                                        <th>İşlemler</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    <?php foreach ($deleted_files as $file): ?>
+                                                        <tr id="deleted-file-row-<?php echo $file['file_id']; ?>">
+                                                            <td><?php echo htmlspecialchars($file['original_name']); ?></td>
+                                                            <td><?php echo number_format($file['file_size'] / 1024, 2) . ' KB'; ?></td>
+                                                            <td><?php echo htmlspecialchars($file['ad'] . ' ' . $file['soyad']); ?></td>
+                                                            <td><?php echo date('d.m.Y H:i', strtotime($file['upload_date'])); ?></td>
+                                                            <td>
+                                                                <?php if ($_SESSION['personel_id'] == 1): ?>
+                                                                    <button class="btn btn-sm btn-success" onclick="restoreFile(<?php echo $file['file_id']; ?>)">
+                                                                        <i class="bi bi-arrow-counterclockwise"></i> Geri Al
+                                                                    </button>
+                                                                    <button class="btn btn-sm btn-danger" onclick="permanentDeleteFile(<?php echo $file['file_id']; ?>)">
+                                                                        <i class="bi bi-trash"></i> Kalıcı Sil
+                                                                    </button>
+                                                                <?php endif; ?>
+                                                            </td>
+                                                        </tr>
+                                                    <?php endforeach; ?>
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    <?php else: ?>
+                                        <div class="alert alert-info">
+                                            Silinmiş dosya bulunmuyor.
+                                        </div>
+                                    <?php endif; ?>
+                                </div>
                             </div>
                         </div>
 
@@ -1592,6 +1653,97 @@ $isAuthorizedToEdit = ($currentUserId == 1 || $currentUserId == $dosya['izin_id'
         .catch(error => {
             console.error('AJAX Hatası:', error);
             alert('Bir hata oluştu: ' + error.message);
+        });
+    }
+
+    function toggleFileView(type) {
+        const activeFiles = document.getElementById('activeFiles');
+        const deletedFiles = document.getElementById('deletedFiles');
+        
+        if (type === 'active') {
+            activeFiles.style.display = 'block';
+            deletedFiles.style.display = 'none';
+        } else {
+            activeFiles.style.display = 'none';
+            deletedFiles.style.display = 'block';
+        }
+    }
+
+    function softDeleteFile(fileId) {
+        if (!confirm('Bu dosyayı silmek istediğinizden emin misiniz?')) {
+            return;
+        }
+        
+        fetch('delete_file.php', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: 'file_id=' + fileId
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload(); // Sayfayı yenile
+            } else {
+                alert('Hata: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Silme hatası:', error);
+            alert('Dosya silme sırasında bir hata oluştu.');
+        });
+    }
+
+    function restoreFile(fileId) {
+        if (!confirm('Bu dosyayı geri almak istediğinizden emin misiniz?')) {
+            return;
+        }
+        
+        fetch('restore_file.php', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: 'file_id=' + fileId
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload(); // Sayfayı yenile
+            } else {
+                alert('Hata: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Geri alma hatası:', error);
+            alert('Dosya geri alma sırasında bir hata oluştu.');
+        });
+    }
+
+    function permanentDeleteFile(fileId) {
+        if (!confirm('Bu dosyayı kalıcı olarak silmek istediğinizden emin misiniz? Bu işlem geri alınamaz!')) {
+            return;
+        }
+        
+        fetch('permanent_delete_file.php', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: 'file_id=' + fileId
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload(); // Sayfayı yenile
+            } else {
+                alert('Hata: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Kalıcı silme hatası:', error);
+            alert('Dosya kalıcı silme sırasında bir hata oluştu.');
         });
     }
     </script>

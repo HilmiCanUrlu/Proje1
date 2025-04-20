@@ -5,17 +5,6 @@ require_once 'db_connection.php';
 header('Content-Type: application/json');
 
 try {
-    // İlk olarak is_deleted kolonunu kontrol et ve yoksa ekle
-    try {
-        $checkColumn = $db->query("SHOW COLUMNS FROM files LIKE 'is_deleted'");
-        if ($checkColumn->rowCount() == 0) {
-            $db->exec("ALTER TABLE files ADD COLUMN is_deleted TINYINT(1) DEFAULT 0");
-        }
-    } catch (PDOException $e) {
-        // Kolon ekleme hatası olursa yoksay ve devam et
-        error_log("Column check/add error: " . $e->getMessage());
-    }
-
     if (!isset($_SESSION['personel_id'])) {
         throw new Exception('Oturum açmanız gerekiyor.');
     }
@@ -27,23 +16,17 @@ try {
     $file_id = (int)$_POST['file_id'];
 
     // Dosya bilgilerini al
-    $stmt = $db->prepare("SELECT file_path, file_name FROM files WHERE file_id = ?");
+    $stmt = $db->prepare("SELECT file_path, file_name FROM files WHERE file_id = ? AND is_deleted = 1");
     $stmt->execute([$file_id]);
     $file = $stmt->fetch();
 
     if (!$file) {
-        throw new Exception('Dosya bulunamadı.');
+        throw new Exception('Silinmiş dosya bulunamadı.');
     }
 
-    // Dosyayı deleted klasörüne taşı
+    // Dosyayı uploads klasörüne geri taşı
     $current_path = $file['file_path'];
-    $new_path = str_replace('uploads/', 'deleted/', $current_path);
-
-    // Deleted klasörünü oluştur (yoksa)
-    $deleted_dir = dirname($new_path);
-    if (!file_exists($deleted_dir)) {
-        mkdir($deleted_dir, 0755, true);
-    }
+    $new_path = str_replace('deleted/', 'uploads/', $current_path);
 
     // Dosyayı taşı
     if (file_exists($current_path)) {
@@ -53,7 +36,7 @@ try {
     }
 
     // Veritabanını güncelle
-    $stmt = $db->prepare("UPDATE files SET is_deleted = 1, file_path = ? WHERE file_id = ?");
+    $stmt = $db->prepare("UPDATE files SET is_deleted = 0, file_path = ? WHERE file_id = ?");
     if (!$stmt->execute([$new_path, $file_id])) {
         // Eğer veritabanı güncellemesi başarısız olursa dosyayı geri taşı
         if (file_exists($new_path)) {
@@ -64,7 +47,7 @@ try {
 
     echo json_encode([
         'success' => true,
-        'message' => 'Dosya başarıyla silindi.'
+        'message' => 'Dosya başarıyla geri alındı.'
     ]);
 
 } catch (Exception $e) {

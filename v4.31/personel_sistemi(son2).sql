@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Apr 20, 2025 at 01:18 AM
+-- Generation Time: Apr 20, 2025 at 12:47 PM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -97,16 +97,17 @@ CREATE TABLE `files` (
   `file_type` varchar(100) NOT NULL,
   `file_size` int(11) NOT NULL,
   `upload_date` timestamp NOT NULL DEFAULT current_timestamp(),
-  `uploaded_by` int(11) NOT NULL
+  `uploaded_by` int(11) NOT NULL,
+  `is_deleted` tinyint(1) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `files`
 --
 
-INSERT INTO `files` (`file_id`, `dosya_id`, `file_name`, `original_name`, `file_path`, `file_type`, `file_size`, `upload_date`, `uploaded_by`) VALUES
-(1, 3, '68042e83297d9.csv', 'breast_cancer.csv', 'uploads/68042e83297d9.csv', 'text/csv', 19635, '2025-04-19 23:15:15', 1),
-(2, 3, '68042ef6b9009.png', 'Ekran Görüntüsü (1).png', 'uploads/68042ef6b9009.png', 'image/png', 255779, '2025-04-19 23:17:10', 2);
+INSERT INTO `files` (`file_id`, `dosya_id`, `file_name`, `original_name`, `file_path`, `file_type`, `file_size`, `upload_date`, `uploaded_by`, `is_deleted`) VALUES
+(1, 3, '68042e83297d9.csv', 'breast_cancer.csv', 'uploads/68042e83297d9.csv', 'text/csv', 19635, '2025-04-19 23:15:15', 1, 0),
+(2, 3, '68042ef6b9009.png', 'Ekran Görüntüsü (1).png', 'uploads/68042ef6b9009.png', 'image/png', 255779, '2025-04-19 23:17:10', 2, 0);
 
 -- --------------------------------------------------------
 
@@ -225,7 +226,8 @@ INSERT INTO `sistem_loglar` (`log_id`, `personel_id`, `islem_tipi`, `islem_detay
 (19, 4, 'LOGIN', 'Kullanıcı girişi yapıldı: bugra', '::1', '2025-04-19 21:43:00'),
 (20, 2, 'LOGIN', 'Kullanıcı girişi yapıldı: ali', '::1', '2025-04-19 21:51:26'),
 (21, 1, 'LOGIN', 'Kullanıcı girişi yapıldı: admin', '::1', '2025-04-19 22:20:31'),
-(22, 2, 'LOGIN', 'Kullanıcı girişi yapıldı: ali', '::1', '2025-04-19 23:16:46');
+(22, 2, 'LOGIN', 'Kullanıcı girişi yapıldı: ali', '::1', '2025-04-19 23:16:46'),
+(23, 1, 'LOGIN', 'Kullanıcı girişi yapıldı: admin', '::1', '2025-04-20 10:41:11');
 
 --
 -- Indexes for dumped tables
@@ -329,7 +331,7 @@ ALTER TABLE `personel`
 -- AUTO_INCREMENT for table `sistem_loglar`
 --
 ALTER TABLE `sistem_loglar`
-  MODIFY `log_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=23;
+  MODIFY `log_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=24;
 
 --
 -- Constraints for dumped tables

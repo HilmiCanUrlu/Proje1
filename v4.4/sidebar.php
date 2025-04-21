@@ -1,5 +1,26 @@
 <?php
 $current_page = basename($_SERVER['PHP_SELF']);
+
+// Kullanıcı bilgilerini veritabanından çekme
+if (isset($_SESSION['personel_id'])) {
+    $kullanici_adi = $_SESSION['kullanici_adi'] ?? '';
+    
+    if (!$kullanici_adi) {
+        // Session'da kullanıcı adı yoksa veritabanından çekelim
+        require_once "database.php";
+        $database = new Database();
+        $db = $database->getConnection();
+        
+        $query = "SELECT ad, soyad, kullanici_adi FROM personel WHERE personel_id = :personel_id";
+        $stmt = $db->prepare($query);
+        $stmt->execute([':personel_id' => $_SESSION['personel_id']]);
+        $kullanici = $stmt->fetch(PDO::FETCH_ASSOC);
+        
+        if ($kullanici && isset($kullanici['kullanici_adi'])) {
+            $kullanici_adi = $kullanici['kullanici_adi'];
+        }
+    }
+}
 ?>
 
 <style>
@@ -7,6 +28,8 @@ $current_page = basename($_SERVER['PHP_SELF']);
         min-height: 100vh;
         background-color: #f8f9fa;
         border-right: 1px solid #dee2e6;
+        display: flex;
+        flex-direction: column;
     }
     .nav-link {
         color: #333;
@@ -85,6 +108,36 @@ $current_page = basename($_SERVER['PHP_SELF']);
     .collapse .nav-link.active i {
         color: #28a745;
     }
+    /* User info area style */
+    .user-info-area {
+        margin-top: auto;
+        padding: 15px;
+        border-top: 1px solid #dee2e6;
+        background-color: #f1f3f5;
+    }
+    .user-welcome {
+        font-size: 0.9rem;
+        margin-bottom: 10px;
+        color: #495057;
+    }
+    .logout-btn {
+        width: 100%;
+        padding: 8px;
+        text-align: center;
+        background-color: #dc3545;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        transition: background-color 0.3s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+    }
+    .logout-btn:hover {
+        background-color: #c82333;
+    }
 </style>
 
 <!-- Sol Sidebar -->
@@ -140,6 +193,25 @@ $current_page = basename($_SERVER['PHP_SELF']);
         <a class="nav-link" href="loglar.php">
             <i class="bi bi-gear"></i>Sistem Logları
         </a>
+        
+        <!-- User welcome and logout button -->
+        <div class="user-info-area">
+            <div class="user-welcome">
+                <i class="bi bi-person-circle"></i> Hoşgeldin, 
+                <strong>
+                    <?php 
+                    if(!empty($kullanici_adi)) {
+                        echo htmlspecialchars($kullanici_adi);
+                    } else {
+                        echo "Kullanıcı";
+                    }
+                    ?>
+                </strong>
+            </div>
+            <a href="logout.php" class="logout-btn">
+                <i class="bi bi-box-arrow-right"></i> Çıkış Yap
+            </a>
+        </div>
     </nav>
 </div>
 

@@ -94,6 +94,15 @@
 </head>
 <body>
     <?php
+    // Oturum başlat
+    session_start();
+    
+    // Oturum kontrolü
+    if (!isset($_SESSION['loggedin']) || $_SESSION['loggedin'] !== true) {
+        header("Location: login.php");
+        exit;
+    }
+    
     require_once 'database.php';
     
     // Veritabanı bağlantısı
@@ -101,6 +110,19 @@
     $conn = $database->getConnection();
 
     try {
+        // Kullanıcı bilgilerini al
+        if (isset($_SESSION['personel_id'])) {
+            $query = "SELECT ad, soyad, kullanici_adi FROM personel WHERE personel_id = :personel_id";
+            $stmt = $conn->prepare($query);
+            $stmt->execute([':personel_id' => $_SESSION['personel_id']]);
+            $kullanici = $stmt->fetch(PDO::FETCH_ASSOC);
+            
+            if ($kullanici && isset($kullanici['kullanici_adi'])) {
+                $_SESSION['kullanici_adi'] = $kullanici['kullanici_adi'];
+                $_SESSION['ad'] = $kullanici['ad'];
+                $_SESSION['soyad'] = $kullanici['soyad'];
+            }
+        }
 
         // Etkinlik tarihlerini al (örnek tablo adı: etkinlikler)
         $stmt = $conn->query("SELECT tarih FROM etkinlikler");

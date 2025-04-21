@@ -279,7 +279,10 @@ $isAuthorizedToEdit = ($currentUserId == 1 || $currentUserId == $dosya['izin_id'
                         <i class="bi bi-folder-fill text-primary"></i>
                         <h2 class="mb-0"><?php echo htmlspecialchars($dosya['dosya_turu']); ?></h2>
                     </div>
-                    <span class="status-badge status-active" onclick="toggleStatus(this)" data-status="active">Aktif</span>
+                    <button id="statusBadge" class="btn status-badge <?php echo $dosya['durum'] == 'aktif' ? 'status-active' : 'status-passive'; ?>" 
+                           onclick="toggleStatus(<?php echo $dosya['dosya_id']; ?>)" type="button">
+                           <?php echo $dosya['durum'] == 'aktif' ? 'AKTİF' : 'PASİF'; ?>
+                    </button>
                 </div>
 
                 <div class="row">
@@ -430,41 +433,62 @@ $isAuthorizedToEdit = ($currentUserId == 1 || $currentUserId == $dosya['izin_id'
                             </div>
 
                             <!-- File Info and Personnel -->
-                            <div class="col-md-6">
+                            <div class="col-md-12">
                                 <div class="section-card">
                                     <div class="section-title">
                                         <i class="bi bi-info-circle-fill"></i>
                                         Dosya Bilgileri
                                     </div>
                                     <div class="row g-2">
-                                        <div class="col-md-6">
+                                        <div class="col-md-3">
                                             <div class="mb-2">
                                                 <label class="small text-muted">Oluşturulma Tarihi</label>
                                                 <div><?php echo date('d.m.Y H:i', strtotime($dosya['olusturma_tarihi'])); ?></div>
                                             </div>
                                         </div>
-                                        <div class="col-md-6">
+                                        <div class="col-md-3">
                                             <div class="mb-2">
                                                 <label class="small text-muted">Oluşturan Personel</label>
                                                 <div><?php echo htmlspecialchars($dosya['personel_ad'] . ' ' . $dosya['personel_soyad']); ?></div>
                                             </div>
                                         </div>
-                                        <div class="col-md-6">
+                                        <div class="col-md-3">
                                             <div class="mb-2">
                                                 <label class="small text-muted">Son Güncelleme</label>
                                                 <div><?php echo isset($dosya['guncelleme_tarihi']) ? date('d.m.Y H:i', strtotime($dosya['guncelleme_tarihi'])) : '-'; ?></div>
                                             </div>
                                         </div>
-                                        <div class="col-md-6">
+                                        <div class="col-md-3">
                                             <div class="mb-2">
                                                 <label class="small text-muted">Dosya Durumu</label>
-                                                <div><?php echo htmlspecialchars($dosya['dosya_durumu'] ?? 'Aktif'); ?></div>
+                                                <div class="d-flex align-items-center">
+                                                    <select id="dosya_durumu" class="form-select form-select-sm" onchange="updateDosyaDurumu(this.value, <?php echo $dosya['dosya_id']; ?>)">
+                                                        <option value="Hazırlandı" <?php echo ($dosya['dosya_durumu'] ?? 'Hazırlandı') == 'Hazırlandı' ? 'selected' : ''; ?>>Hazırlandı</option>
+                                                        <option value="Belediyede" <?php echo ($dosya['dosya_durumu'] ?? 'Hazırlandı') == 'Belediyede' ? 'selected' : ''; ?>>Belediyede</option>
+                                                        <option value="Tapuda" <?php echo ($dosya['dosya_durumu'] ?? 'Hazırlandı') == 'Tapuda' ? 'selected' : ''; ?>>Tapuda</option>
+                                                        <option value="Tamamlandı" <?php echo ($dosya['dosya_durumu'] ?? 'Hazırlandı') == 'Tamamlandı' ? 'selected' : ''; ?>>Tamamlandı</option>
+                                                        <option value="Beklemede" <?php echo ($dosya['dosya_durumu'] ?? 'Hazırlandı') == 'Beklemede' ? 'selected' : ''; ?>>Beklemede</option>
+                                                    </select>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <div class="mb-2">
+                                                <label class="small text-muted">Dosya Türü</label>
+                                                <div><?php echo htmlspecialchars($dosya['dosya_turu']); ?></div>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <div class="mb-2">
+                                                <label class="small text-muted">Dosya No</label>
+                                                <div><?php echo htmlspecialchars($dosya['dosya_id']); ?></div>
                                             </div>
                                         </div>
                                     </div>
                                 </div>
                             </div>
 
+                            <!-- Personel Sections - Side by Side -->
                             <div class="col-md-6">
                                 <div class="section-card">
                                     <div class="section-title">
@@ -483,7 +507,15 @@ $isAuthorizedToEdit = ($currentUserId == 1 || $currentUserId == $dosya['izin_id'
                                             </select>
                                             <button class="btn btn-primary mt-2" onclick="assignKidemliPersonel()">Kaydet</button>
                                         <?php else: ?>
-                                            <span><?php echo htmlspecialchars($kidemliPersonel['ad'] . ' ' . $kidemliPersonel['soyad']); ?></span>
+                                            <span>
+                                                <?php 
+                                                if ($kidemliPersonel && isset($kidemliPersonel['ad']) && isset($kidemliPersonel['soyad'])) {
+                                                    echo htmlspecialchars($kidemliPersonel['ad'] . ' ' . $kidemliPersonel['soyad']);
+                                                } else {
+                                                    echo "Atanmamış";
+                                                }
+                                                ?>
+                                            </span>
                                         <?php endif; ?>
                                     </div>
                                 </div>
@@ -508,7 +540,15 @@ $isAuthorizedToEdit = ($currentUserId == 1 || $currentUserId == $dosya['izin_id'
                                             </select>
                                             <button class="btn btn-primary mt-2" onclick="assignSorumluPersonel()">Kaydet</button>
                                         <?php else: ?>
-                                            <span><?php echo htmlspecialchars($sorumluPersonel['ad'] . ' ' . $sorumluPersonel['soyad']); ?></span>
+                                            <span>
+                                                <?php 
+                                                if ($sorumluPersonel && isset($sorumluPersonel['ad']) && isset($sorumluPersonel['soyad'])) {
+                                                    echo htmlspecialchars($sorumluPersonel['ad'] . ' ' . $sorumluPersonel['soyad']);
+                                                } else {
+                                                    echo "Atanmamış";
+                                                }
+                                                ?>
+                                            </span>
                                         <?php endif; ?>
                                     </div>
                                 </div>
@@ -516,7 +556,7 @@ $isAuthorizedToEdit = ($currentUserId == 1 || $currentUserId == $dosya['izin_id'
                         </div>
                     </div>
 
-                    <!-- Right Column - Tasks, File Attachments, Notes -->
+                    <!-- Right Column - Tasks, File Attachments -->
                     <div class="col-md-3">
                         <!-- Tasks -->
                         <div class="section-card">
@@ -663,24 +703,6 @@ $isAuthorizedToEdit = ($currentUserId == 1 || $currentUserId == $dosya['izin_id'
                                         </div>
                                     <?php endif; ?>
                                 </div>
-                            </div>
-                        </div>
-
-                        <!-- File Notes -->
-                        <div class="section-card">
-                            <div class="section-title">
-                                <i class="bi bi-journal-text"></i>
-                                Dosya Notları
-                            </div>
-                            <div class="mb-3">
-                                <select class="form-select mb-3">
-                                    <option>İşlem Seçiniz</option>
-                                </select>
-                                <textarea class="form-control" rows="3" placeholder="Not Ekle"></textarea>
-                                <button class="btn btn-primary w-100 mt-3">KAYDET</button>
-                            </div>
-                            <div class="text-center text-muted py-4">
-                                Not Eklenmedi
                             </div>
                         </div>
                     </div>
@@ -844,6 +866,8 @@ $isAuthorizedToEdit = ($currentUserId == 1 || $currentUserId == $dosya['izin_id'
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script>
     document.addEventListener('DOMContentLoaded', function() {
         // Initialize variables with null checks
@@ -1349,19 +1373,59 @@ $isAuthorizedToEdit = ($currentUserId == 1 || $currentUserId == $dosya['izin_id'
         document.getElementById(elementId).textContent = oldValue;
     }
 
-    function toggleStatus(element) {
-        const isActive = element.getAttribute('data-status') === 'active';
-        if (isActive) {
-            element.classList.remove('status-active');
-            element.classList.add('status-passive');
-            element.textContent = 'Pasif';
-            element.setAttribute('data-status', 'passive');
-        } else {
-            element.classList.remove('status-passive');
-            element.classList.add('status-active');
-            element.textContent = 'Aktif';
-            element.setAttribute('data-status', 'active');
-        }
+    function toggleStatus(dosyaId) {
+        // Mevcut durumu al
+        const statusBadge = document.getElementById('statusBadge');
+        const isAktif = statusBadge.textContent.trim() === 'AKTİF';
+        const newStatus = isAktif ? 'pasif' : 'aktif';
+        
+        // AJAX isteği ile durum güncelleme
+        fetch('update_dosya_durum.php', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: `dosya_id=${dosyaId}&durum=${newStatus}`
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Başarılı güncelleme, görsel durum değiştir
+                if (newStatus === 'aktif') {
+                    statusBadge.textContent = 'AKTİF';
+                    statusBadge.classList.remove('status-passive');
+                    statusBadge.classList.add('status-active');
+                } else {
+                    statusBadge.textContent = 'PASİF';
+                    statusBadge.classList.remove('status-active');
+                    statusBadge.classList.add('status-passive');
+                }
+                
+                // Başarı mesajı göster
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Durum güncellendi',
+                    text: 'Dosya durumu ' + (newStatus === 'aktif' ? 'aktif' : 'pasif') + ' olarak değiştirildi.',
+                    timer: 1500,
+                    showConfirmButton: false
+                });
+            } else {
+                // Hata mesajı göster
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Hata',
+                    text: data.message || 'Durum güncellenirken bir hata oluştu.'
+                });
+            }
+        })
+        .catch(error => {
+            console.error('AJAX Hatası:', error);
+            Swal.fire({
+                icon: 'error',
+                title: 'Hata',
+                text: 'Sunucu ile iletişim kurulurken bir hata oluştu.'
+            });
+        });
     }
 
     let currentDosyaId = <?php echo $dosya['dosya_id']; ?>;
@@ -1744,6 +1808,84 @@ $isAuthorizedToEdit = ($currentUserId == 1 || $currentUserId == $dosya['izin_id'
         .catch(error => {
             console.error('Kalıcı silme hatası:', error);
             alert('Dosya kalıcı silme sırasında bir hata oluştu.');
+        });
+    }
+
+    function toggleStatus(dosyaId) {
+        // Mevcut durumu al
+        const statusBadge = document.getElementById('statusBadge');
+        const isAktif = statusBadge.textContent.trim() === 'AKTİF';
+        const newStatus = isAktif ? 'pasif' : 'aktif';
+        
+        // AJAX isteği ile durum güncelleme
+        fetch('update_dosya_durum.php', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: `dosya_id=${dosyaId}&durum=${newStatus}`
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Başarılı güncelleme, görsel durum değiştir
+                if (newStatus === 'aktif') {
+                    statusBadge.textContent = 'AKTİF';
+                    statusBadge.classList.remove('status-passive');
+                    statusBadge.classList.add('status-active');
+                } else {
+                    statusBadge.textContent = 'PASİF';
+                    statusBadge.classList.remove('status-active');
+                    statusBadge.classList.add('status-passive');
+                }
+                
+                // Başarı mesajı göster
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Durum güncellendi',
+                    text: 'Dosya durumu ' + (newStatus === 'aktif' ? 'aktif' : 'pasif') + ' olarak değiştirildi.',
+                    timer: 1500,
+                    showConfirmButton: false
+                });
+            } else {
+                // Hata mesajı göster
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Hata',
+                    text: data.message || 'Durum güncellenirken bir hata oluştu.'
+                });
+            }
+        })
+        .catch(error => {
+            console.error('AJAX Hatası:', error);
+            Swal.fire({
+                icon: 'error',
+                title: 'Hata',
+                text: 'Sunucu ile iletişim kurulurken bir hata oluştu.'
+            });
+        });
+    }
+
+    function updateDosyaDurumu(value, dosyaId) {
+        fetch('update_dosya_durumu.php', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: `dosya_id=${dosyaId}&dosya_durumu=${value}`
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('Dosya durumu başarıyla güncellendi');
+                location.reload();
+            } else {
+                alert('Bir hata oluştu: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('AJAX Hatası:', error);
+            alert('Bir hata oluştu: ' + error.message);
         });
     }
     </script>

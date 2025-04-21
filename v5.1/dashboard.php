@@ -234,6 +234,7 @@
                         <div class="card mb-4">
                             <div class="card-header">
                                 <h5 class="card-title mb-0">Yaklaşan Etkinlikler</h5>
+                                <a href="tum_etkinlik.php" class="btn btn-primary btn-sm">Tümünü Göster</a>
                             </div>
                             <div class="card-body">
                                 <ul class="list-group">

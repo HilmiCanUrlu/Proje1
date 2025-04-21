@@ -34,6 +34,16 @@ if (isset($_GET['il']) && !empty($_GET['il'])) {
     $params[':il'] = $_GET['il'];
 }
 
+if (isset($_GET['dosya_durumu']) && !empty($_GET['dosya_durumu'])) {
+    $where .= " AND d.dosya_durumu = :dosya_durumu";
+    $params[':dosya_durumu'] = $_GET['dosya_durumu'];
+}
+
+if (isset($_GET['durum']) && !empty($_GET['durum'])) {
+    $where .= " AND d.durum = :durum";
+    $params[':durum'] = $_GET['durum'];
+}
+
 // Dosyaları getir
 $query = "SELECT d.*, m.musteri_adi 
           FROM dosyalar d 
@@ -166,10 +176,12 @@ $takim_proje_count = count(array_filter($dosyalar, function($d) { return $d['dos
                                     <table class="table table-hover">
                                         <thead>
                                             <tr>
-                                                <th style="width: 25%">Müşteri Adı</th>
-                                                <th style="width: 15%">Dosya Türü</th>
-                                                <th style="width: 25%">İlçe-Mahalle</th>
-                                                <th style="width: 15%">Ada/Parsel</th>
+                                                <th style="width: 20%">Müşteri Adı</th>
+                                                <th style="width: 12%">Dosya Türü</th>
+                                                <th style="width: 20%">İlçe-Mahalle</th>
+                                                <th style="width: 10%">Ada/Parsel</th>
+                                                <th style="width: 10%">Dosya Durumu</th>
+                                                <th style="width: 8%">Durum</th>
                                                 <th style="width: 20%">İşlemler</th>
                                             </tr>
                                         </thead>
@@ -184,6 +196,20 @@ $takim_proje_count = count(array_filter($dosyalar, function($d) { return $d['dos
                                                     <?php echo htmlspecialchars($dosya['ilce'] . ' ' . $dosya['mahalle']); ?>
                                                 </td>
                                                 <td><?php echo htmlspecialchars($dosya['ada'] . '/' . $dosya['parsel']); ?></td>
+                                                <td>
+                                                    <span class="badge <?php 
+                                                        echo $dosya['dosya_durumu'] == 'Tamamlandı' ? 'bg-success' : 
+                                                            ($dosya['dosya_durumu'] == 'Beklemede' ? 'bg-warning' : 
+                                                            ($dosya['dosya_durumu'] == 'Belediyede' || $dosya['dosya_durumu'] == 'Tapuda' ? 'bg-info' : 'bg-primary')); 
+                                                    ?>">
+                                                        <?php echo htmlspecialchars($dosya['dosya_durumu'] ?? 'Hazırlandı'); ?>
+                                                    </span>
+                                                </td>
+                                                <td>
+                                                    <span class="badge <?php echo $dosya['durum'] == 'aktif' ? 'bg-success' : 'bg-danger'; ?>">
+                                                        <?php echo $dosya['durum'] == 'aktif' ? 'Aktif' : 'Pasif'; ?>
+                                                    </span>
+                                                </td>
                                                 <td>
                                                     <div class="btn-group btn-group-sm">
                                                     <a href="file_detay.php?dosya_id=<?php echo $dosya['dosya_id']; ?>" class="btn btn-primary">
@@ -234,6 +260,20 @@ $takim_proje_count = count(array_filter($dosyalar, function($d) { return $d['dos
                                     <div class="col-md-12">
                                         <label class="form-label">İl</label>
                                         <select name="il" class="form-select">
+                                            <option value="">Seçiniz</option>
+                                            <!-- JavaScript ile doldurulacak -->
+                                        </select>
+                                    </div>
+                                    <div class="col-md-12">
+                                        <label class="form-label">Dosya Durumu</label>
+                                        <select name="dosya_durumu" class="form-select">
+                                            <option value="">Seçiniz</option>
+                                            <!-- JavaScript ile doldurulacak -->
+                                        </select>
+                                    </div>
+                                    <div class="col-md-12">
+                                        <label class="form-label">Durum</label>
+                                        <select name="durum" class="form-select">
                                             <option value="">Seçiniz</option>
                                             <!-- JavaScript ile doldurulacak -->
                                         </select>
@@ -360,6 +400,8 @@ $takim_proje_count = count(array_filter($dosyalar, function($d) { return $d['dos
             const dosyaTuruSelect = document.querySelector('select[name="dosya_turu"]');
             const islemTuruSelect = document.querySelector('select[name="islem_turu"]');
             const ilSelect = document.querySelector('select[name="il"]');
+            const dosyaDurumuSelect = document.querySelector('select[name="dosya_durumu"]');
+            const durumSelect = document.querySelector('select[name="durum"]');
 
             // Dosya türlerini doldur
             data.dosya_turleri.forEach(tur => {
@@ -375,6 +417,34 @@ $takim_proje_count = count(array_filter($dosyalar, function($d) { return $d['dos
             Object.keys(data.iller).forEach(il => {
                 ilSelect.innerHTML += `<option value="${il}">${il}</option>`;
             });
+            
+            // Dosya durumlarını doldur
+            data.dosya_durumlari.forEach(durum => {
+                dosyaDurumuSelect.innerHTML += `<option value="${durum}">${durum}</option>`;
+            });
+            
+            // Durumları doldur
+            Object.entries(data.durum_secenekleri).forEach(([value, text]) => {
+                durumSelect.innerHTML += `<option value="${value}">${text}</option>`;
+            });
+            
+            // Seçili değerleri ayarla
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.has('dosya_turu')) {
+                dosyaTuruSelect.value = urlParams.get('dosya_turu');
+            }
+            if (urlParams.has('islem_turu')) {
+                islemTuruSelect.value = urlParams.get('islem_turu');
+            }
+            if (urlParams.has('il')) {
+                ilSelect.value = urlParams.get('il');
+            }
+            if (urlParams.has('dosya_durumu')) {
+                dosyaDurumuSelect.value = urlParams.get('dosya_durumu');
+            }
+            if (urlParams.has('durum')) {
+                durumSelect.value = urlParams.get('durum');
+            }
         });
 
     // Dosya detaylarını göster
@@ -388,7 +458,8 @@ $takim_proje_count = count(array_filter($dosyalar, function($d) { return $d['dos
                     <p><strong>İl/İlçe:</strong> ${data.dosya.il}/${data.dosya.ilce}</p>
                     <p><strong>Mahalle:</strong> ${data.dosya.mahalle}</p>
                     <p><strong>Ada/Parsel:</strong> ${data.dosya.ada}/${data.dosya.parsel}</p>
-                    <p><strong>Durum:</strong> ${data.dosya.dosya_durumu}</p>
+                    <p><strong>Dosya Durumu:</strong> <span class="badge ${data.dosya.dosya_durumu === 'Tamamlandı' ? 'bg-success' : (data.dosya.dosya_durumu === 'Beklemede' ? 'bg-warning' : (data.dosya.dosya_durumu === 'Belediyede' || data.dosya.dosya_durumu === 'Tapuda' ? 'bg-info' : 'bg-primary'))}">${data.dosya.dosya_durumu || 'Hazırlandı'}</span></p>
+                    <p><strong>Durum:</strong> <span class="badge ${data.dosya.durum === 'aktif' ? 'bg-success' : 'bg-danger'}">${data.dosya.durum === 'aktif' ? 'Aktif' : 'Pasif'}</span></p>
                 `;
 
                 document.getElementById('musteriBilgileri').innerHTML = `

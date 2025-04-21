@@ -19,7 +19,7 @@ try {
     $conn = $db->getConnection();
 
     // Get the file's izin_id to check authorization
-    $stmt = $conn->prepare("SELECT izin_id, musteri_id FROM dosyalar WHERE dosya_id = ?");
+    $stmt = $conn->prepare("SELECT izin_id FROM dosyalar WHERE dosya_id = ?");
     $stmt->execute([$_POST['dosya_id']]);
     $dosya = $stmt->fetch(PDO::FETCH_ASSOC);
 
@@ -32,44 +32,34 @@ try {
     // Start transaction
     $conn->beginTransaction();
 
+    $dosya_id = $_POST['dosya_id'];
+    $yeni_toplam_tutar = floatval($_POST['toplam_tutar']);
+
     // Get the latest record from muhasebe table
-    $stmt = $conn->prepare("SELECT * FROM muhasebe WHERE musteri_id = ? ORDER BY muhasebe_id DESC LIMIT 1");
-    $stmt->execute([$dosya['musteri_id']]);
+    $stmt = $conn->prepare("SELECT * FROM muhasebe WHERE dosya_id = ? ORDER BY muhasebe_id DESC LIMIT 1");
+    $stmt->execute([$dosya_id]);
     $lastRecord = $stmt->fetch(PDO::FETCH_ASSOC);
 
-    $newToplamTutar = floatval($_POST['toplam_tutar']);
-    
     if ($lastRecord) {
         // Calculate new kalan_tutar based on previous payments
         $yapilan_odeme = floatval($lastRecord['yapilan_odeme']);
-        $kalan_tutar = $newToplamTutar - $yapilan_odeme;
+        $kalan_tutar = $yeni_toplam_tutar - $yapilan_odeme;
 
         // Update the latest record
         $stmt = $conn->prepare("UPDATE muhasebe SET toplam_tutar = ?, kalan_tutar = ? WHERE muhasebe_id = ?");
         $stmt->execute([
-            $newToplamTutar,
+            $yeni_toplam_tutar,
             $kalan_tutar,
             $lastRecord['muhasebe_id']
         ]);
-
-        // Insert new record with updated values
-        $stmt = $conn->prepare("INSERT INTO muhasebe (musteri_id, toplam_tutar, yapilan_odeme, kalan_tutar, aciklama) 
-                               VALUES (?, ?, ?, ?, ?)");
-        $stmt->execute([
-            $dosya['musteri_id'],
-            $newToplamTutar,
-            $yapilan_odeme,
-            $kalan_tutar,
-            'Toplam tutar güncellendi'
-        ]);
     } else {
-        // First record for this customer
-        $stmt = $conn->prepare("INSERT INTO muhasebe (musteri_id, toplam_tutar, yapilan_odeme, kalan_tutar, aciklama) 
+        // First record for this file
+        $stmt = $conn->prepare("INSERT INTO muhasebe (dosya_id, toplam_tutar, yapilan_odeme, kalan_tutar, aciklama) 
                                VALUES (?, ?, 0, ?, ?)");
         $stmt->execute([
-            $dosya['musteri_id'],
-            $newToplamTutar,
-            $newToplamTutar,
+            $dosya_id,
+            $yeni_toplam_tutar,
+            $yeni_toplam_tutar,
             'İlk toplam tutar kaydı'
         ]);
     }
@@ -80,8 +70,8 @@ try {
     echo json_encode([
         'success' => true,
         'message' => 'Toplam tutar başarıyla güncellendi',
-        'new_total' => $newToplamTutar,
-        'new_balance' => $kalan_tutar ?? $newToplamTutar
+        'new_total' => $yeni_toplam_tutar,
+        'new_balance' => $kalan_tutar ?? $yeni_toplam_tutar
     ]);
 
 } catch (PDOException $e) {

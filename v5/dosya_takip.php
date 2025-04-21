@@ -336,10 +336,7 @@ $takim_proje_count = count(array_filter($dosyalar, function($d) { return $d['dos
                                         <label class="form-label">Yapılan Ödeme</label>
                                         <input type="number" class="form-control" id="yapilanTutar" name="yapilan_tutar" step="0.01" required>
                                     </div>
-                                    <div class="mb-3">
-                                        <label class="form-label">Kalan Tutar</label>
-                                        <input type="number" class="form-control" id="kalanTutar" name="kalan_tutar" readonly>
-                                    </div>
+                                    <input type="hidden" id="kalanTutar" name="kalan_tutar" readonly>
                                     <div class="mb-3">
                                         <label class="form-label">Açıklama</label>
                                         <textarea class="form-control" name="aciklama" rows="3"></textarea>
@@ -525,6 +522,7 @@ $takim_proje_count = count(array_filter($dosyalar, function($d) { return $d['dos
         const toplamTutarInput = document.getElementById('toplamTutar');
         const yapilanTutarInput = document.getElementById('yapilanTutar');
         const kalanTutarInput = document.getElementById('kalanTutar');
+        const kaydetBtn = document.querySelector('#islemEkleForm button[type="submit"]');
         isToplamTutarEditable = !isToplamTutarEditable;
         
         if (isToplamTutarEditable) {
@@ -533,16 +531,12 @@ $takim_proje_count = count(array_filter($dosyalar, function($d) { return $d['dos
             yapilanTutarInput.required = false;
             yapilanTutarInput.value = '';
             kalanTutarInput.value = '';
+            kaydetBtn.disabled = true;
             this.classList.remove('btn-warning');
             this.classList.add('btn-success');
             this.textContent = 'Değişikliği Onayla';
         } else {
             // Confirm and save changes
-            toplamTutarInput.readOnly = true;
-            this.classList.remove('btn-success');
-            this.classList.add('btn-warning');
-            this.textContent = 'Toplam Tutarı Değiştir';
-            
             const yeniToplamTutar = parseFloat(toplamTutarInput.value) || 0;
             
             // Save total amount change using the new endpoint
@@ -560,19 +554,36 @@ $takim_proje_count = count(array_filter($dosyalar, function($d) { return $d['dos
                     // Refresh the muhasebe details
                     showMuhasebeDetay(currentDosyaId);
                     yapilanTutarInput.required = true;
+                    kaydetBtn.disabled = false;
                     alert('Toplam tutar başarıyla güncellendi');
+                    
+                    // Reset button state
+                    toplamTutarInput.readOnly = true;
+                    this.classList.remove('btn-success');
+                    this.classList.add('btn-warning');
+                    this.textContent = 'Toplam Tutarı Değiştir';
+                    
+                    // Close the modal
+                    bootstrap.Modal.getInstance(document.getElementById('islemEkleModal')).hide();
                 } else {
                     alert('Toplam tutar güncellenirken bir hata oluştu: ' + data.message);
                     // Revert the button state
-                    this.classList.remove('btn-warning');
-                    this.classList.add('btn-success');
-                    this.textContent = 'Değişikliği Onayla';
-                    toplamTutarInput.readOnly = false;
+                    this.classList.remove('btn-success');
+                    this.classList.add('btn-warning');
+                    this.textContent = 'Toplam Tutarı Değiştir';
+                    toplamTutarInput.readOnly = true;
+                    kaydetBtn.disabled = false;
                 }
             })
             .catch(error => {
                 console.error('AJAX Hatası:', error);
                 alert('Bir hata oluştu: ' + error.message);
+                // Revert the button state
+                this.classList.remove('btn-success');
+                this.classList.add('btn-warning');
+                this.textContent = 'Toplam Tutarı Değiştir';
+                toplamTutarInput.readOnly = true;
+                kaydetBtn.disabled = false;
             });
         }
     });
@@ -612,9 +623,20 @@ $takim_proje_count = count(array_filter($dosyalar, function($d) { return $d['dos
 
                 // Yapılan ödeme değiştiğinde kalan tutarı güncelle
                 yapilanTutarInput.addEventListener('input', function() {
+                    const toplamTutar = parseFloat(document.getElementById('toplamTutar').value) || 0;
                     const yapilanTutar = parseFloat(this.value) || 0;
-                    const kalanTutar = (parseFloat(toplamTutarInput.value) || 0) - yapilanTutar;
-                    kalanTutarInput.value = kalanTutar.toFixed(2);
+                    const kalanTutar = parseFloat(document.getElementById('kalanTutar').value) || toplamTutar;
+                    const yeniKalanTutar = kalanTutar - yapilanTutar;
+                    document.getElementById('kalanTutar').value = yeniKalanTutar.toFixed(2);
+                    
+                    // Özet bilgilerini de güncelle
+                    const mevcutYapilanOdeme = parseFloat(document.getElementById('yapilanOdemeOzet').textContent.replace(/[^\d.-]/g, '')) || 0;
+                    const yeniToplamYapilanOdeme = mevcutYapilanOdeme + yapilanTutar;
+                    
+                    document.getElementById('yapilanOdemeOzet').textContent = 
+                        yeniToplamYapilanOdeme.toLocaleString('tr-TR', {minimumFractionDigits: 2}) + ' ₺';
+                    document.getElementById('kalanTutarOzet').textContent = 
+                        yeniKalanTutar.toLocaleString('tr-TR', {minimumFractionDigits: 2}) + ' ₺';
                 });
 
                 // Kalan tutar alanını sadece okunabilir yap
@@ -685,8 +707,9 @@ $takim_proje_count = count(array_filter($dosyalar, function($d) { return $d['dos
     document.getElementById('yapilanTutar').addEventListener('input', function() {
         const toplamTutar = parseFloat(document.getElementById('toplamTutar').value) || 0;
         const yapilanTutar = parseFloat(this.value) || 0;
-        const kalanTutar = toplamTutar - yapilanTutar;
-        document.getElementById('kalanTutar').value = kalanTutar.toFixed(2);
+        const kalanTutar = parseFloat(document.getElementById('kalanTutar').value) || toplamTutar;
+        const yeniKalanTutar = kalanTutar - yapilanTutar;
+        document.getElementById('kalanTutar').value = yeniKalanTutar.toFixed(2);
         
         // Özet bilgilerini de güncelle
         const mevcutYapilanOdeme = parseFloat(document.getElementById('yapilanOdemeOzet').textContent.replace(/[^\d.-]/g, '')) || 0;
@@ -695,7 +718,7 @@ $takim_proje_count = count(array_filter($dosyalar, function($d) { return $d['dos
         document.getElementById('yapilanOdemeOzet').textContent = 
             yeniToplamYapilanOdeme.toLocaleString('tr-TR', {minimumFractionDigits: 2}) + ' ₺';
         document.getElementById('kalanTutarOzet').textContent = 
-            (toplamTutar - yeniToplamYapilanOdeme).toLocaleString('tr-TR', {minimumFractionDigits: 2}) + ' ₺';
+            yeniKalanTutar.toLocaleString('tr-TR', {minimumFractionDigits: 2}) + ' ₺';
     });
 
     // Toplam tutar değiştiğinde kalan tutarı güncelle

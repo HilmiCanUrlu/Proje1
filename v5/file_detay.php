@@ -1,6 +1,7 @@
 <?php
 session_start();
 require_once "database.php";
+require_once "Logger.php"; // Add Logger class inclusion
 
 if (!isset($_SESSION['loggedin']) || $_SESSION['loggedin'] !== true) {
     header("Location: login.php");
@@ -14,6 +15,7 @@ if (!isset($_GET['dosya_id'])) {
 
 $database = new Database();
 $db = $database->getConnection();
+$logger = new Logger($db); // Initialize Logger instance
 
 // Get file details
 $query = "SELECT d.*, m.*, p.ad as personel_ad, p.soyad as personel_soyad 
@@ -1388,6 +1390,7 @@ $isAuthorizedToEdit = ($currentUserId == 1 || $currentUserId == $dosya['izin_id'
         const formData = new FormData();
         formData.append('dosya_id', dosyaId);
         formData.append('musteri_id', musteriId);
+        formData.append('log_action', true); // Add log flag
         
         // Eğer tapu malikini de güncelleme seçeneği işaretlendiyse
         if (updateTapuMaliki && musteriAdi) {
@@ -1484,7 +1487,7 @@ $isAuthorizedToEdit = ($currentUserId == 1 || $currentUserId == $dosya['izin_id'
             headers: {
                 'Content-Type': 'application/x-www-form-urlencoded',
             },
-            body: `dosya_id=${dosyaId}&durum=${newStatus}`
+            body: `dosya_id=${dosyaId}&durum=${newStatus}&log_action=true` // Add log flag
         })
         .then(response => response.json())
         .then(data => {
@@ -1744,6 +1747,7 @@ $isAuthorizedToEdit = ($currentUserId == 1 || $currentUserId == $dosya['izin_id'
         const formData = new FormData();
         formData.append('dosya_id', <?php echo $dosya['dosya_id']; ?>);
         formData.append('personel_id', selectedPersonelId);
+        formData.append('log_action', true); // Add log flag
         
         fetch('update_izin_id.php', {
             method: 'POST',
@@ -1774,6 +1778,7 @@ $isAuthorizedToEdit = ($currentUserId == 1 || $currentUserId == $dosya['izin_id'
         const formData = new FormData();
         formData.append('dosya_id', <?php echo $dosya['dosya_id']; ?>);
         formData.append('personel_id', selectedPersonelId);
+        formData.append('log_action', true); // Add log flag
         
         fetch('update_sorumlu_id.php', {
             method: 'POST',
@@ -1799,6 +1804,7 @@ $isAuthorizedToEdit = ($currentUserId == 1 || $currentUserId == $dosya['izin_id'
         const formData = new FormData();
         formData.append('dosya_id', <?php echo $dosya['dosya_id']; ?>);
         formData.append('toplam_tutar', toplamTutar);
+        formData.append('log_action', true); // Add log flag
 
         fetch('update_toplam_tutar.php', {
             method: 'POST',
@@ -1842,7 +1848,7 @@ $isAuthorizedToEdit = ($currentUserId == 1 || $currentUserId == $dosya['izin_id'
             headers: {
                 'Content-Type': 'application/x-www-form-urlencoded',
             },
-            body: 'file_id=' + fileId
+            body: 'file_id=' + fileId + '&log_action=true' // Add log flag
         })
         .then(response => response.json())
         .then(data => {
@@ -1868,7 +1874,7 @@ $isAuthorizedToEdit = ($currentUserId == 1 || $currentUserId == $dosya['izin_id'
             headers: {
                 'Content-Type': 'application/x-www-form-urlencoded',
             },
-            body: 'file_id=' + fileId
+            body: 'file_id=' + fileId + '&log_action=true' // Add log flag
         })
         .then(response => response.json())
         .then(data => {
@@ -1894,7 +1900,7 @@ $isAuthorizedToEdit = ($currentUserId == 1 || $currentUserId == $dosya['izin_id'
             headers: {
                 'Content-Type': 'application/x-www-form-urlencoded',
             },
-            body: 'file_id=' + fileId
+            body: 'file_id=' + fileId + '&log_action=true' // Add log flag
         })
         .then(response => response.json())
         .then(data => {
@@ -1910,48 +1916,29 @@ $isAuthorizedToEdit = ($currentUserId == 1 || $currentUserId == $dosya['izin_id'
         });
     }
 
-    function toggleStatus(dosyaId) {
-        // Mevcut durumu al
-        const statusBadge = document.getElementById('statusBadge');
-        const isAktif = statusBadge.textContent.trim() === 'AKTİF';
-        const newStatus = isAktif ? 'pasif' : 'aktif';
-        
-        // AJAX isteği ile durum güncelleme
-        fetch('update_dosya_durum.php', {
+    function updateDosyaDurumu(value, dosyaId) {
+        fetch('update_dosya_durumu.php', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/x-www-form-urlencoded',
             },
-            body: `dosya_id=${dosyaId}&durum=${newStatus}`
+            body: `dosya_id=${dosyaId}&dosya_durumu=${value}&log_action=true` // Add log flag
         })
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                // Başarılı güncelleme, görsel durum değiştir
-                if (newStatus === 'aktif') {
-                    statusBadge.textContent = 'AKTİF';
-                    statusBadge.classList.remove('status-passive');
-                    statusBadge.classList.add('status-active');
-                } else {
-                    statusBadge.textContent = 'PASİF';
-                    statusBadge.classList.remove('status-active');
-                    statusBadge.classList.add('status-passive');
-                }
-                
-                // Başarı mesajı göster
                 Swal.fire({
                     icon: 'success',
-                    title: 'Durum güncellendi',
-                    text: 'Dosya durumu ' + (newStatus === 'aktif' ? 'aktif' : 'pasif') + ' olarak değiştirildi.',
-                    timer: 1500,
-                    showConfirmButton: false
+                    title: 'Başarılı',
+                    text: 'Dosya durumu güncellendi',
+                    showConfirmButton: false,
+                    timer: 1500
                 });
             } else {
-                // Hata mesajı göster
                 Swal.fire({
                     icon: 'error',
                     title: 'Hata',
-                    text: data.message || 'Durum güncellenirken bir hata oluştu.'
+                    text: data.message || 'Dosya durumu güncellenirken bir hata oluştu'
                 });
             }
         })
@@ -1962,29 +1949,6 @@ $isAuthorizedToEdit = ($currentUserId == 1 || $currentUserId == $dosya['izin_id'
                 title: 'Hata',
                 text: 'Sunucu ile iletişim kurulurken bir hata oluştu.'
             });
-        });
-    }
-
-    function updateDosyaDurumu(value, dosyaId) {
-        fetch('update_dosya_durumu.php', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/x-www-form-urlencoded',
-            },
-            body: `dosya_id=${dosyaId}&dosya_durumu=${value}`
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                alert('Dosya durumu başarıyla güncellendi');
-                location.reload();
-            } else {
-                alert('Bir hata oluştu: ' + data.message);
-            }
-        })
-        .catch(error => {
-            console.error('AJAX Hatası:', error);
-            alert('Bir hata oluştu: ' + error.message);
         });
     }
     </script>

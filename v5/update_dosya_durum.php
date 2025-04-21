@@ -48,7 +48,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $logger = new Logger($conn);
                 $logger->logKaydet(
                     $personel_id,
-                    'DOSYA_DURUM_GUNCELLE',
+                    'AKTIVITE_GUNCELLE',
                     "Dosya durumu güncellendi: Dosya ID: $dosya_id, Yeni Durum: $durum"
                 );
                 
@@ -82,7 +82,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 if ($result) {
                     // Log kaydı ekle
                     $logger = new Logger($conn);
-                    $logger->logAction($_SESSION['personel_id'], 'dosya_durumu_guncelleme', "Dosya ID: $dosya_id, Yeni Dosya Durumu: $dosya_durumu");
+                    $logger->logKaydet($_SESSION['personel_id'], 'DOSYA_DURUMU_GUNCELLE', "Dosya ID: $dosya_id, Yeni Dosya Durumu: $dosya_durumu");
                     
                     echo json_encode(['success' => true, 'message' => 'Dosya durumu başarıyla güncellendi']);
                 } else {

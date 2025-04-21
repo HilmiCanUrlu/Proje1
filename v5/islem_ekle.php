@@ -22,7 +22,7 @@ try {
     if (!isset($_POST['dosya_id']) || !isset($_POST['yapilan_tutar'])) {
         throw new Exception('Gerekli alanlar eksik');
     }
-    
+    $kalan= $_POST['kalan_tutar'];
     $dosya_id = $_POST['dosya_id'];
     $yapilan_tutar = floatval($_POST['yapilan_tutar']);
     $aciklama = $_POST['aciklama'] ?? '';
@@ -39,7 +39,7 @@ try {
             throw new Exception('İlk işlem için toplam tutar gerekli');
         }
         $toplam_tutar = floatval($_POST['toplam_tutar']);
-        $kalan_tutar = $toplam_tutar - $yapilan_tutar;
+        $kalan_tutar = $kalan - $yapilan_tutar;
     } else {
         // Mevcut işlem - son toplam tutarı ve kalan tutarı al
         $son_islem = "SELECT toplam_tutar, kalan_tutar FROM muhasebe 
@@ -49,8 +49,11 @@ try {
         $stmt->execute(['dosya_id' => $dosya_id]);
         $son_kayit = $stmt->fetch(PDO::FETCH_ASSOC);
         
+        // Son kalan tutardan yeni ödemeyi düş
         $toplam_tutar = $son_kayit['toplam_tutar'];
-        $kalan_tutar = $son_kayit['kalan_tutar'] - $yapilan_tutar;
+        $kalan_tutar = floatval($son_kayit['kalan_tutar']) - $yapilan_tutar;
+        
+
     }
     
     // Yeni işlemi ekle
@@ -66,14 +69,27 @@ try {
         'aciklama' => $aciklama
     ]);
     
+    // Tüm işlemleri getir
+    $islemler_query = "SELECT * FROM muhasebe WHERE dosya_id = :dosya_id ORDER BY muhasebe_id ASC";
+    $stmt = $db->prepare($islemler_query);
+    $stmt->execute(['dosya_id' => $dosya_id]);
+    $islemler = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    
+    // Toplam yapılan ödemeyi hesapla
+    $toplam_yapilan = 0;
+    foreach ($islemler as $islem) {
+        $toplam_yapilan += floatval($islem['yapilan_odeme']);
+    }
+    
     echo json_encode([
         'success' => true,
         'message' => 'İşlem başarıyla eklendi',
-        'data' => [
+        'ozet' => [
             'toplam_tutar' => $toplam_tutar,
-            'yapilan_tutar' => $yapilan_tutar,
-            'kalan_tutar' => $kalan_tutar
-        ]
+            'toplam_yapilan' => $toplam_yapilan,
+            'toplam_kalan' => $kalan_tutar
+        ],
+        'islemler' => $islemler
     ]);
     
 } catch (Exception $e) {

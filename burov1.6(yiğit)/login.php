@@ -14,7 +14,7 @@ class Login {
     public function login($kullanici_adi, $sifre) {
         try {
             // SQL sorgusunu hazırla
-            $query = "SELECT personel_id, ad, soyad, kullanici_adi, sifre, aktif_pasif 
+            $query = "SELECT personel_id, ad, soyad, kullanici_adi, sifre 
                      FROM " . $this->table_name . " 
                      WHERE kullanici_adi = :kullanici_adi 
                      LIMIT 1";
@@ -28,18 +28,6 @@ class Login {
             if($stmt->rowCount() > 0) {
                 $row = $stmt->fetch(PDO::FETCH_ASSOC);
                 
-                // Check if the user is active
-                if ($row['aktif_pasif'] == 0) {
-                    // Log the failed attempt for inactive users
-                    $logger = new Logger($this->conn);
-                    $logger->logKaydet(
-                        null,
-                        'LOGIN_FAILED',
-                        "Başarısız giriş denemesi (aktif değil): " . $kullanici_adi
-                    );
-                    return "inactive"; // Return a specific value for inactive users
-                }
-
                 // Şifre kontrolü (Gerçek uygulamada hash kullanılmalı)
                 if($sifre == $row['sifre']) {
                     // Oturum bilgilerini kaydet
@@ -84,13 +72,9 @@ if($_SERVER["REQUEST_METHOD"] == "POST") {
     $kullanici_adi = $_POST['kullanici_adi'] ?? '';
     $sifre = $_POST['sifre'] ?? '';
 
-    $loginResult = $login->login($kullanici_adi, $sifre);
-    
-    if ($loginResult === true) {
+    if($login->login($kullanici_adi, $sifre)) {
         header("Location: dashboard.php");
         exit();
-    } elseif ($loginResult === "inactive") {
-        $error_message = "Şu an aktif çalışan değilsiniz!";
     } else {
         $error_message = "Geçersiz kullanıcı adı veya şifre!";
     }

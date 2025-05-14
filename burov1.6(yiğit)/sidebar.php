@@ -40,7 +40,7 @@ if (isset($_SESSION['personel_id'])) {
         margin-bottom: 1.5rem;
     }
     .logo-image {
-        max-height: 230px;
+        max-height: 80px;
         max-width: 100%;
         object-fit: contain;
         transition: all 0.3s ease;
@@ -197,9 +197,6 @@ if (isset($_SESSION['personel_id'])) {
                     <a class="nav-link ps-4" href="yeni_dosya.php">
                         <i class="bi bi-file-earmark-plus"></i>Yeni Dosya Ekle
                     </a>
-                    <a class="nav-link ps-4" href="islem_turu_ekle.php">
-                        <i class="bi bi-file-earmark-break"></i>Yeni İşlem Türü Ekle
-                    </a>
                 </div>
             </div>
         </div>
@@ -223,7 +220,7 @@ if (isset($_SESSION['personel_id'])) {
         </div>
 
         <a class="nav-link" href="loglar.php">
-            <i class="bi bi-gear"></i>Sistem
+            <i class="bi bi-gear"></i>Sistem Logları
         </a>
         
         <!-- User welcome and logout button -->

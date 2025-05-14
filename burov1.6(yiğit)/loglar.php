@@ -1,36 +1,6 @@
 <?php
 session_start();
 require_once "database.php";
-// Yetki kontrolü ve uyarı mekanizması
-if (!isset($_SESSION['personel_id'])) {
-    header("Location: login.php");
-    exit();
-} elseif ($_SESSION['personel_id'] != 1) {
-    // Temel HTML yapısını oluştur
-    echo '<!DOCTYPE html>
-    <html lang="tr">
-    <head>
-        <meta charset="UTF-8">
-        <title>Yetki Hatası</title>
-        <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    </head>
-    <body>
-    <script>
-        Swal.fire({
-            icon: "error",
-            title: "Yetki Hatası",
-            text: "Bu işlem için yetkiniz bulunmamaktadır.",
-            confirmButtonText: "Tamam"
-
-    
-        }).then(() => {
-            window.history.back(); // Bir önceki sayfaya dön
-        });
-    </script>
-    </body>
-    </html>';
-    exit();
-}
 
 // Handle logo upload
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_FILES['logo'])) {
@@ -335,7 +305,9 @@ endif; ?>
                             <!-- İndirme butonları -->
                             <div class="ms-auto">
                                 <!-- Yedekle -->
-                                
+                                <a href="backup.php" class="btn btn-sm btn-warning me-2">
+                                    <i class="bi bi-database me-1"></i>Veritabanını Yedekle
+                                    </a>
                             <button class="btn btn-sm btn-success" onclick="exportToExcel()">
                                     <i class="bi bi-file-earmark-excel me-1"></i>Excel İndir
                                 </button>

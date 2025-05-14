@@ -8,36 +8,6 @@ if (!isset($_SESSION['loggedin']) || $_SESSION['loggedin'] !== true) {
     header("Location: login.php");
     exit;
 }
-// Yetki kontrolü ve uyarı mekanizması
-if (!isset($_SESSION['personel_id'])) {
-    header("Location: login.php");
-    exit();
-} elseif ($_SESSION['personel_id'] != 1) {
-    // Temel HTML yapısını oluştur
-    echo '<!DOCTYPE html>
-    <html lang="tr">
-    <head>
-        <meta charset="UTF-8">
-        <title>Yetki Hatası</title>
-        <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    </head>
-    <body>
-    <script>
-        Swal.fire({
-            icon: "error",
-            title: "Yetki Hatası",
-            text: "Bu işlem için yetkiniz bulunmamaktadır.",
-            confirmButtonText: "Tamam"
-
-    
-        }).then(() => {
-            window.history.back(); // Bir önceki sayfaya dön
-        });
-    </script>
-    </body>
-    </html>';
-    exit();
-}
 
 $database = new Database();
 $db = $database->getConnection();

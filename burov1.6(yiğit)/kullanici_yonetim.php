@@ -1,163 +1,5 @@
 <?php
 session_start();
-
-// Yetki kontrolü ve uyarı mekanizması
-if (!isset($_SESSION['personel_id'])) {
-    header("Location: login.php");
-    exit();
-} elseif ($_SESSION['personel_id'] != 1) {
-    // Temel HTML yapısını oluştur
-    echo '<!DOCTYPE html>
-    <html lang="tr">
-    <head>
-        <meta charset="UTF-8">
-        <title>Yetki Hatası</title>
-        <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    </head>
-    <body>
-    <script>
-        Swal.fire({
-            icon: "error",
-            title: "Yetki Hatası",
-            text: "Bu işlem için yetkiniz bulunmamaktadır.",
-            confirmButtonText: "Tamam"
-
-    
-        }).then(() => {
-            window.history.back(); // Bir önceki sayfaya dön
-        });
-    </script>
-    </body>
-    </html>';
-    exit();
-}
-// Include database connection and Logger class
-require_once 'database.php';
-require_once 'Logger.php';
-
-// Create database connection
-$database = new Database();
-$conn = $database->getConnection();
-
-// Create Logger instance
-$logger = new Logger($conn);
-
-// Handle AJAX request to update user status
-if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['personel_id']) && isset($_POST['aktif_pasif'])) {
-    $personel_id = $_POST['personel_id'];
-    $aktif_pasif = $_POST['aktif_pasif'];
-
-    try {
-        $sql = "UPDATE personel SET aktif_pasif = :aktif_pasif WHERE personel_id = :personel_id";
-        $stmt = $conn->prepare($sql);
-        $stmt->execute([':aktif_pasif' => $aktif_pasif, ':personel_id' => $personel_id]);
-        
-        echo json_encode(['success' => true]);
-        exit();
-    } catch (PDOException $e) {
-        echo json_encode(['success' => false, 'error' => $e->getMessage()]);
-        exit();
-    }
-}
-
-// CRUD Operations
-if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-    if (isset($_POST['action'])) {
-        try {
-            switch ($_POST['action']) {
-                case 'add':
-                    $sql = "INSERT INTO personel (ad, soyad, kullanici_adi, email, sifre, tc_kimlik_no, telefon, aktif_pasif) 
-                            VALUES (:ad, :soyad, :kullanici_adi, :email, :sifre, :tc_kimlik_no, :telefon, :aktif_pasif)";
-                    $stmt = $conn->prepare($sql);
-                    $stmt->execute([
-                        ':ad' => $_POST['ad'],
-                        ':soyad' => $_POST['soyad'],
-                        ':kullanici_adi' => $_POST['kullanici_adi'],
-                        ':email' => $_POST['email'],
-                        ':sifre' => $_POST['sifre'],
-                        ':tc_kimlik_no' => $_POST['tc_kimlik_no'],
-                        ':telefon' => $_POST['telefon'],
-                        ':aktif_pasif' => isset($_POST['aktif_pasif']) ? 1 : 0
-                    ]);
-                    $logger->logKaydet($_SESSION['personel_id'], 'Kullanıcı Ekle', 'Yeni kullanıcı eklendi: ' . $_POST['kullanici_adi']);
-                    break;
-
-                case 'edit':
-                    // Start building the SQL query
-                    $sql = "UPDATE personel SET 
-                            ad = :ad, 
-                            soyad = :soyad, 
-                            kullanici_adi = :kullanici_adi, 
-                            email = :email, 
-                            tc_kimlik_no = :tc_kimlik_no, 
-                            telefon = :telefon";
-
-                    // Check if the password is provided
-                    if (!empty($_POST['sifre'])) {
-                        $sql .= ", sifre = :sifre"; // Include password in the update
-                    }
-
-                    // Check if the user ID is 1
-                    if ($_POST['personel_id'] == 1) {
-                        $sql .= ", aktif_pasif = 1"; // Always set to active
-                    } else {
-                        $sql .= ", aktif_pasif = :aktif_pasif"; // Use the provided value for other users
-                    }
-
-                    $sql .= " WHERE personel_id = :personel_id";
-
-                    $params = [
-                        ':ad' => $_POST['ad'],
-                        ':soyad' => $_POST['soyad'],
-                        ':kullanici_adi' => $_POST['kullanici_adi'],
-                        ':email' => $_POST['email'],
-                        ':tc_kimlik_no' => $_POST['tc_kimlik_no'],
-                        ':telefon' => $_POST['telefon'],
-                        ':personel_id' => $_POST['personel_id']
-                    ];
-
-                    // Add password to parameters if provided
-                    if (!empty($_POST['sifre'])) {
-                        $params[':sifre'] = $_POST['sifre'];
-                    }
-
-                    // Add aktif_pasif to parameters if the user is not ID 1
-                    if ($_POST['personel_id'] != 1) {
-                        $params[':aktif_pasif'] = isset($_POST['aktif_pasif']) ? 1 : 0;
-                    }
-
-                    $stmt = $conn->prepare($sql);
-                    $stmt->execute($params);
-                    $logger->logKaydet($_SESSION['personel_id'], 'Kullanıcı Düzenle', 'Kullanıcı güncellendi: ' . $_POST['kullanici_adi']);
-                    
-                    // Set success message in session
-                    $_SESSION['success_message'] = "Kullanıcı bilgileri başarıyla güncellendi.";
-                    header("Location: kullanici_yonetim.php"); // Redirect to the same page
-                    exit();
-                    break;
-
-                case 'delete':
-                    $sql = "DELETE FROM personel WHERE personel_id = :personel_id";
-                    $stmt = $conn->prepare($sql);
-                    $stmt->execute([':personel_id' => $_POST['personel_id']]);
-                    $logger->logKaydet($_SESSION['personel_id'], 'Kullanıcı Sil', 'Kullanıcı silindi: ' . $_POST['personel_id']);
-                    break;
-            }
-        } catch(PDOException $e) {
-            echo "Hata: " . $e->getMessage();
-        }
-    }
-}
-
-// Fetch all users
-try {
-    $sql = "SELECT personel_id, ad, soyad, kullanici_adi, email, tc_kimlik_no, telefon, sifre, aktif_pasif FROM personel";
-    $stmt = $conn->query($sql);
-    $result = $stmt->fetchAll(PDO::FETCH_ASSOC);
-} catch(PDOException $e) {
-    echo "Hata: " . $e->getMessage();
-    $result = [];
-}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -167,8 +9,6 @@ try {
     <title>Kullanıcı Yönetimi</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <style>
         body {
             background-color: #f5f5f5;
@@ -265,44 +105,78 @@ try {
             border-color: #28a745;
             box-shadow: 0 0 0 0.2rem rgba(40, 167, 69, 0.25);
         }
-        .status-badge {
-            /*padding: 0.5rem 1rem;*/
-            border: none;
-            /*border-radius: 0.25rem;*/
-            cursor: pointer;
-            transition: background-color 0.3s;
-        }
-        .status-active {
-            background-color: #28a745; /* Green */
-            color: white;
-        }
-        .status-passive {
-            background-color: #dc3545; /* Red */
-            color: white;
-        }
     </style>
 </head>
 <body>
-    <?php if (isset($_SESSION['success_message'])): ?>
-    <script>
-        Swal.fire({
-            icon: 'success',
-            title: 'Başarılı!',
-            text: '<?php echo $_SESSION['success_message']; ?>',
-            showConfirmButton: false,
-            timer: 2500,
-            timerProgressBar: true,
-            background: '#f8f9fa',
-            position: 'center',
-            customClass: {
-                title: 'text-success',
-                popup: 'shadow-sm'
+    <?php
+    require_once 'database.php';
+    
+    // Create database connection
+    $database = new Database();
+    $conn = $database->getConnection();
+    
+    // CRUD Operations
+    if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+        if (isset($_POST['action'])) {
+            try {
+                switch ($_POST['action']) {
+                    case 'add':
+                        $sql = "INSERT INTO personel (ad, soyad, kullanici_adi, email, sifre, tc_kimlik_no, telefon) 
+                                VALUES (:ad, :soyad, :kullanici_adi, :email, :sifre, :tc_kimlik_no, :telefon)";
+                        $stmt = $conn->prepare($sql);
+                        $stmt->execute([
+                            ':ad' => $_POST['ad'],
+                            ':soyad' => $_POST['soyad'],
+                            ':kullanici_adi' => $_POST['kullanici_adi'],
+                            ':email' => $_POST['email'],
+                            ':sifre' => $_POST['sifre'],
+                            ':tc_kimlik_no' => $_POST['tc_kimlik_no'],
+                            ':telefon' => $_POST['telefon']
+                        ]);
+                        break;
+
+                    case 'edit':
+                        $sql = "UPDATE personel SET 
+                                ad = :ad, 
+                                soyad = :soyad, 
+                                kullanici_adi = :kullanici_adi, 
+                                email = :email, 
+                                tc_kimlik_no = :tc_kimlik_no, 
+                                telefon = :telefon 
+                                WHERE personel_id = :personel_id";
+                        $stmt = $conn->prepare($sql);
+                        $stmt->execute([
+                            ':ad' => $_POST['ad'],
+                            ':soyad' => $_POST['soyad'],
+                            ':kullanici_adi' => $_POST['kullanici_adi'],
+                            ':email' => $_POST['email'],
+                            ':tc_kimlik_no' => $_POST['tc_kimlik_no'],
+                            ':telefon' => $_POST['telefon'],
+                            ':personel_id' => $_POST['personel_id']
+                        ]);
+                        break;
+
+                    case 'delete':
+                        $sql = "DELETE FROM personel WHERE personel_id = :personel_id";
+                        $stmt = $conn->prepare($sql);
+                        $stmt->execute([':personel_id' => $_POST['personel_id']]);
+                        break;
+                }
+            } catch(PDOException $e) {
+                echo "Hata: " . $e->getMessage();
             }
-        });
-    </script>
-    <?php 
-        unset($_SESSION['success_message']); // Mesajı temizle
-    endif; 
+        }
+    }
+
+    // Fetch all users
+    try {
+        $sql = "SELECT * FROM personel";
+        $stmt = $conn->query($sql);
+        $result = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    } catch(PDOException $e) {
+        echo "Hata: " . $e->getMessage();
+        $result = [];
+    }
     ?>
 
     <div class="container-fluid">
@@ -340,8 +214,6 @@ try {
                                     <th>Email</th>
                                     <th>TC Kimlik No</th>
                                     <th>Telefon</th>
-                                    <th>Şifre</th>
-                                    <th>Durum</th>
                                     <th>İşlemler</th>
                                 </tr>
                             </thead>
@@ -355,20 +227,6 @@ try {
                                     <td><?php echo htmlspecialchars($row['email']); ?></td>
                                     <td><?php echo htmlspecialchars($row['tc_kimlik_no']); ?></td>
                                     <td><?php echo htmlspecialchars($row['telefon']); ?></td>
-                                    <td><?php echo htmlspecialchars($row['sifre']); ?></td>
-                                    <td>
-                                        <?php if ($row['personel_id'] == 1): ?>
-                                            <button class="btn status-badge status-active" disabled>
-                                                AKTİF
-                                            </button>
-                                        <?php else: ?>
-                                            <button id="statusBadge" class="btn status-badge <?php echo $row['aktif_pasif'] ? 'status-active' : 'status-passive'; ?>" 
-                                                    data-id="<?php echo htmlspecialchars($row['personel_id']); ?>" 
-                                                    onclick="toggleStatus(this)">
-                                                <?php echo $row['aktif_pasif'] ? 'AKTİF' : 'PASİF'; ?>
-                                            </button>
-                                        <?php endif; ?>
-                                    </td>
                                     <td>
                                         <button class="btn btn-sm btn-primary edit-user" 
                                                 data-bs-toggle="modal" 
@@ -379,22 +237,15 @@ try {
                                                 data-kullanici="<?php echo htmlspecialchars($row['kullanici_adi']); ?>"
                                                 data-email="<?php echo htmlspecialchars($row['email']); ?>"
                                                 data-tc="<?php echo htmlspecialchars($row['tc_kimlik_no']); ?>"
-                                                data-telefon="<?php echo htmlspecialchars($row['telefon']); ?>"
-                                                data-aktif="<?php echo $row['aktif_pasif']; ?>">
+                                                data-telefon="<?php echo htmlspecialchars($row['telefon']); ?>">
                                             <i class="bi bi-pencil"></i>
                                         </button>
-                                        <?php if ($row['personel_id'] == 1  ): ?>
-                                            <button class="btn btn-sm btn-danger" disabled>
-                                                Sil
-                                            </button>
-                                        <?php else: ?>
-                                            <button class="btn btn-sm btn-danger delete-user"
-                                                    data-bs-toggle="modal"
-                                                    data-bs-target="#deleteUserModal"
-                                                    data-id="<?php echo htmlspecialchars($row['personel_id']); ?>">
-                                                <i class="bi bi-trash"></i>
-                                            </button>
-                                        <?php endif; ?>
+                                        <button class="btn btn-sm btn-danger delete-user"
+                                                data-bs-toggle="modal"
+                                                data-bs-target="#deleteUserModal"
+                                                data-id="<?php echo htmlspecialchars($row['personel_id']); ?>">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
                                     </td>
                                 </tr>
                                 <?php endforeach; ?>
@@ -435,7 +286,7 @@ try {
                         </div>
                         <div class="mb-3">
                             <label class="form-label">Şifre</label>
-                            <input type="text" class="form-control" name="sifre" required>
+                            <input type="password" class="form-control" name="sifre" required>
                         </div>
                         <div class="mb-3">
                             <label class="form-label">TC Kimlik No</label>
@@ -445,7 +296,6 @@ try {
                             <label class="form-label">Telefon</label>
                             <input type="text" class="form-control" name="telefon" required>
                         </div>
-                        
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">İptal</button>
@@ -485,10 +335,6 @@ try {
                             <input type="email" class="form-control" name="email" id="edit_email" required>
                         </div>
                         <div class="mb-3">
-                            <label class="form-label">Şifre (boş bırakılırsa güncellenmez)</label>
-                            <input type="text" class="form-control" name="sifre" id="edit_sifre">
-                        </div>
-                        <div class="mb-3">
                             <label class="form-label">TC Kimlik No</label>
                             <input type="text" class="form-control" name="tc_kimlik_no" id="edit_tc_kimlik_no" required maxlength="11">
                         </div>
@@ -496,7 +342,6 @@ try {
                             <label class="form-label">Telefon</label>
                             <input type="text" class="form-control" name="telefon" id="edit_telefon" required>
                         </div>
-                        
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">İptal</button>
@@ -542,9 +387,6 @@ try {
                 document.getElementById('edit_email').value = this.dataset.email;
                 document.getElementById('edit_tc_kimlik_no').value = this.dataset.tc;
                 document.getElementById('edit_telefon').value = this.dataset.telefon;
-
-                // Set the aktif_pasif checkbox based on the current status
-                document.getElementById('edit_aktif_pasif').checked = this.dataset.aktif === '1'; // Assuming '1' means active
             });
         });
 
@@ -554,32 +396,6 @@ try {
                 document.getElementById('delete_personel_id').value = this.dataset.id;
             });
         });
-
-        function toggleStatus(button) {
-            const userId = button.dataset.id;
-            const isActive = button.classList.contains('status-active') ? 0 : 1;
-
-            // Send AJAX request to update the status
-            fetch('kullanici_yonetim.php', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded',
-                },
-                body: `personel_id=${userId}&aktif_pasif=${isActive}`,
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    // Update button text and class
-                    button.classList.toggle('status-active', isActive);
-                    button.classList.toggle('status-passive', !isActive);
-                    button.textContent = isActive ? 'AKTİF' : 'PASİF';
-                } else {
-                    console.error('Error updating status:', data.error);
-                }
-            })
-            .catch(error => console.error('Error:', error));
-        }
     </script>
 </body>
 </html> 
